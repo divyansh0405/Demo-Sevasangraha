@@ -40,6 +40,9 @@ const DischargeSection: React.FC = () => {
   const [showFormModal, setShowFormModal] = useState(false);
   const [selectedFormData, setSelectedFormData] = useState<any>(null);
   const [selectedFormType, setSelectedFormType] = useState<string>('');
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingPatient, setEditingPatient] = useState<DischargedPatient | null>(null);
+  const [editedDischargeDate, setEditedDischargeDate] = useState('');
 
   useEffect(() => {
     loadDischargedPatients();
@@ -542,6 +545,110 @@ const DischargeSection: React.FC = () => {
     }
   };
 
+  const handleEditDischargeDate = (patient: DischargedPatient) => {
+    setEditingPatient(patient);
+    // Format the date for the input field (YYYY-MM-DD)
+    if (patient.discharge_date) {
+      const dateOnly = patient.discharge_date.split('T')[0];
+      setEditedDischargeDate(dateOnly);
+    } else {
+      setEditedDischargeDate('');
+    }
+    setShowEditModal(true);
+  };
+
+  const handleSaveDischargeDate = async () => {
+    if (!editingPatient || !editedDischargeDate) {
+      toast.error('Please select a valid discharge date');
+      return;
+    }
+
+    try {
+      let summaryUpdated = false;
+      let admissionUpdated = false;
+
+      // Try to update discharge_summaries table if it has a discharge_date column
+      if (editingPatient.discharge_summary?.id) {
+        try {
+          // Try with discharge_date column (most common)
+          const { error: summaryError } = await supabase
+            .from('discharge_summaries')
+            .update({
+              discharge_date: editedDischargeDate,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', editingPatient.discharge_summary.id);
+
+          if (!summaryError) {
+            summaryUpdated = true;
+            console.log('✅ Updated discharge_summaries table');
+          } else {
+            console.warn('⚠️ Could not update discharge_summaries:', summaryError.message);
+          }
+        } catch (error) {
+          console.warn('⚠️ Discharge summaries update not critical, continuing...', error);
+        }
+      }
+
+      // Update the patient_admissions table (primary source of discharge date)
+      try {
+        const { error: admissionError } = await supabase
+          .from('patient_admissions')
+          .update({
+            discharge_date: editedDischargeDate,
+            updated_at: new Date().toISOString()
+          })
+          .eq('patient_id', editingPatient.id)
+          .eq('status', 'DISCHARGED');
+
+        if (!admissionError) {
+          admissionUpdated = true;
+          console.log('✅ Updated patient_admissions table');
+        } else {
+          console.error('❌ Error updating patient admission:', admissionError);
+          toast.error('Failed to update admission record');
+          return;
+        }
+      } catch (error: any) {
+        console.error('❌ Error updating patient admission:', error);
+        toast.error(`Failed to update admission record: ${error.message}`);
+        return;
+      }
+
+      // If at least the admission was updated, consider it a success
+      if (admissionUpdated) {
+        // Update local state
+        setDischargedPatients(prev => prev.map(p =>
+          p.id === editingPatient.id
+            ? { ...p, discharge_date: editedDischargeDate }
+            : p
+        ));
+
+        const successMsg = summaryUpdated
+          ? 'Discharge date updated successfully in all records'
+          : 'Discharge date updated successfully';
+
+        toast.success(`${successMsg} for ${editingPatient.first_name} ${editingPatient.last_name}`);
+        setShowEditModal(false);
+        setEditingPatient(null);
+        setEditedDischargeDate('');
+
+        // Reload the data to ensure consistency
+        await loadDischargedPatients();
+      }
+
+    } catch (error: any) {
+      console.error('Error updating discharge date:', error);
+      toast.error(`Failed to update discharge date: ${error.message}`);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setShowEditModal(false);
+    setEditingPatient(null);
+    setEditedDischargeDate('');
+  };
+
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto p-6">
@@ -748,6 +855,13 @@ const DischargeSection: React.FC = () => {
                           title="View complete discharge details and IPD forms"
                         >
                           👁️ View Details
+                        </button>
+                        <button
+                          onClick={() => handleEditDischargeDate(patient)}
+                          className="px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-200 text-sm font-medium"
+                          title="Edit discharge date"
+                        >
+                          ✏️ Edit
                         </button>
                         <button
                           onClick={() => deleteDischargeRecord(patient.id)}
@@ -962,6 +1076,97 @@ const DischargeSection: React.FC = () => {
                   className="px-6 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
                 >
                   Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Discharge Date Modal */}
+      {showEditModal && editingPatient && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[70] p-4">
+          <div className="bg-white rounded-lg w-full max-w-md">
+            {/* Modal Header */}
+            <div className="bg-green-600 text-white p-6 rounded-t-lg">
+              <h2 className="text-2xl font-bold">✏️ Edit Discharge Date</h2>
+              <p className="text-green-100 mt-1">
+                {editingPatient.first_name} {editingPatient.last_name}
+              </p>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6">
+              <div className="space-y-4">
+                {/* Patient Info */}
+                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <span className="font-semibold text-gray-700">Patient ID:</span>
+                      <p className="text-gray-900">{editingPatient.patient_id}</p>
+                    </div>
+                    <div>
+                      <span className="font-semibold text-gray-700">IPD No:</span>
+                      <p className="text-gray-900">{editingPatient.ipd_number || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <span className="font-semibold text-gray-700">Current Date:</span>
+                      <p className="text-gray-900">
+                        {editingPatient.discharge_date
+                          ? new Date(editingPatient.discharge_date).toLocaleDateString('en-IN', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric'
+                            })
+                          : 'Not set'
+                        }
+                      </p>
+                    </div>
+                    <div>
+                      <span className="font-semibold text-gray-700">Stay Duration:</span>
+                      <p className="text-gray-900">{editingPatient.admission_duration || 'Unknown'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Date Input */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    New Discharge Date <span className="text-red-600">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={editedDischargeDate}
+                    onChange={(e) => setEditedDischargeDate(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-lg"
+                    required
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Select the correct discharge date for this patient
+                  </p>
+                </div>
+
+                {/* Warning Message */}
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                  <p className="text-sm text-yellow-800">
+                    <strong>⚠️ Note:</strong> This will update the discharge date in both the discharge summary and admission records. This change will reflect in all reports and billing.
+                  </p>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end space-x-3 mt-6 pt-4 border-t">
+                <button
+                  onClick={handleCancelEdit}
+                  className="px-5 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveDischargeDate}
+                  className="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors font-medium"
+                >
+                  💾 Save Changes
                 </button>
               </div>
             </div>

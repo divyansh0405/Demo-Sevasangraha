@@ -3222,6 +3222,25 @@ Description: ${bill.description || 'N/A'}
       }
     }
 
+    // 🔧 Helper function to format dates without timezone issues
+    const formatLocalDate = (dateStr: string | undefined | null): string => {
+      if (!dateStr) return 'N/A';
+      try {
+        // If date string is in ISO format (YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss),
+        // split it to avoid timezone conversion issues
+        const dateOnly = dateStr.split('T')[0];
+        if (dateOnly.includes('-')) {
+          const [year, month, day] = dateOnly.split('-');
+          return `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}`;
+        }
+        // Fallback for other formats
+        return new Date(dateStr).toLocaleDateString('en-IN');
+      } catch (error) {
+        logger.error('❌ Error formatting date:', error);
+        return 'N/A';
+      }
+    };
+
     // 🔍 ENHANCEMENT: Fetch ipd_number if missing from patient admissions
     if (bill.patients?.id && (!bill.patients?.ipd_number || bill.patients?.ipd_number === 'N/A')) {
       try {
@@ -3642,7 +3661,7 @@ Description: ${bill.description || 'N/A'}
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; font-size: 16px;">
                 <div>
                   <p style="color: black; margin: 6px 0;"><strong>BILL NO.:</strong> ${bill.transaction_reference || bill.id}</p>
-                  <p style="color: black; margin: 6px 0;"><strong>BILL DATE:</strong> ${bill.transaction_date ? new Date(bill.transaction_date).toLocaleDateString('en-IN') : (bill.created_at ? new Date(bill.created_at).toLocaleDateString('en-IN') : 'N/A')}</p>
+                  <p style="color: black; margin: 6px 0;"><strong>BILL DATE:</strong> ${formatLocalDate(bill.transaction_date || bill.created_at)}</p>
                   <p style="color: black; margin: 6px 0;"><strong>PATIENT ID:</strong> ${bill.patients?.patient_id || 'N/A'}</p>
                   <p style="color: black; margin: 6px 0;"><strong>PATIENT NAME:</strong> ${bill.patients?.first_name || ''} ${bill.patients?.last_name || ''}</p>
                   <p style="color: black; margin: 6px 0;"><strong>AGE/SEX:</strong> ${bill.patients?.age || 'N/A'} years / ${bill.patients?.gender || 'N/A'}</p>
@@ -3651,8 +3670,8 @@ Description: ${bill.description || 'N/A'}
                 <div>
                   <p style="color: black; margin: 6px 0;"><strong>DR NAME:</strong> ${bill.patients?.assigned_doctor || bill.patients?.doctor_name || bill.doctor_name || 'N/A'}</p>
                   <p style="color: black; margin: 6px 0;"><strong>IPD NO.:</strong> ${bill.patients?.ipd_number || 'N/A'}</p>
-                  <p style="color: black; margin: 6px 0;"><strong>ADMISSION DATE:</strong> ${(bill.patients?.admission_date) ? new Date(bill.patients.admission_date).toLocaleDateString('en-IN') : ((bill.patients?.admissions && bill.patients.admissions[0]?.admission_date) ? new Date(bill.patients.admissions[0].admission_date).toLocaleDateString('en-IN') : 'N/A')}</p>
-                  <p style="color: black; margin: 6px 0;"><strong>DISCHARGE DATE:</strong> ${(bill.patients?.discharge_date) ? new Date(bill.patients.discharge_date).toLocaleDateString('en-IN') : ((bill.patients?.admissions && bill.patients.admissions[0]?.discharge_date) ? new Date(bill.patients.admissions[0].discharge_date).toLocaleDateString('en-IN') : 'Not Discharged')}</p>
+                  <p style="color: black; margin: 6px 0;"><strong>ADMISSION DATE:</strong> ${formatLocalDate(bill.patients?.admission_date || (bill.patients?.admissions && bill.patients.admissions[0]?.admission_date))}</p>
+                  <p style="color: black; margin: 6px 0;"><strong>DISCHARGE DATE:</strong> ${formatLocalDate(bill.patients?.discharge_date || (bill.patients?.admissions && bill.patients.admissions[0]?.discharge_date)) || 'Not Discharged'}</p>
                   <p style="color: black; margin: 6px 0;"><strong>ROOM TYPE:</strong> ${bill.patients?.room_type || (bill.patients?.admissions && bill.patients.admissions[0]?.room_type) || 'N/A'}</p>
                   <p style="color: black; margin: 6px 0;"><strong>BED NO.:</strong> ${bill.patients?.ipd_bed_number || bill.patients?.bed_number || 'N/A'}</p>
                 </div>
@@ -4221,6 +4240,25 @@ Description: ${bill.description || 'N/A'}
       return;
     }
 
+    // 🔧 Helper function to format dates without timezone issues
+    const formatLocalDate = (dateStr: string | undefined | null): string => {
+      if (!dateStr) return 'N/A';
+      try {
+        // If date string is in ISO format (YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss),
+        // split it to avoid timezone conversion issues
+        const dateOnly = dateStr.split('T')[0];
+        if (dateOnly.includes('-')) {
+          const [year, month, day] = dateOnly.split('-');
+          return `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}`;
+        }
+        // Fallback for other formats
+        return new Date(dateStr).toLocaleDateString('en-IN');
+      } catch (error) {
+        logger.error('❌ Error formatting date:', error);
+        return 'N/A';
+      }
+    };
+
     const BILLS_PER_PAGE = 13;
     const billPages: any[][] = [];
 
@@ -4240,9 +4278,7 @@ Description: ${bill.description || 'N/A'}
         const doctor = bill.doctor_name || 'N/A';
         const amount = bill.amount || 0;
         const status = bill.status || 'UNKNOWN';
-        const date = bill.transaction_date ?
-          new Date(bill.transaction_date).toLocaleDateString('en-IN') :
-          (bill.created_at ? new Date(bill.created_at).toLocaleDateString('en-IN') : 'N/A');
+        const date = formatLocalDate(bill.transaction_date || bill.created_at);
 
         let statusClass = 'status-badge ';
         if (status === 'COMPLETED') statusClass += 'status-completed';
