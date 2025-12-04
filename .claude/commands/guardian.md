@@ -1,0 +1,1 @@
+Run the code-guardian agent to perform comprehensive pre-deployment validation including type checking, linting, security scanning, and code quality analysis. This will validate the codebase before deployment, git push, or running the development server.
