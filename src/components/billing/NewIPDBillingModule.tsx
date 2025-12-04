@@ -6,6 +6,7 @@ import { supabase, HOSPITAL_ID } from '../../config/supabaseNew';
 import type { PatientWithRelations } from '../../config/supabaseNew';
 import { MEDICAL_SERVICES, searchServices, type MedicalService } from '../../data/medicalServices';
 import { logger } from '../../utils/logger';
+import BillingService, { type IPDBill } from '../../services/billingService';
 
 interface BillingRow {
   id: string;
@@ -121,12 +122,12 @@ const NewIPDBillingModule: React.FC = () => {
   const [patientSearchTerm, setPatientSearchTerm] = useState('');
   const [showPatientDropdown, setShowPatientDropdown] = useState(false);
   const [showPatientModal, setShowPatientModal] = useState(false);
-  
+
   // Payment and payer states
   const [paymentMode, setPaymentMode] = useState<'CASH' | 'INSURANCE' | 'CARD' | 'UPI'>('CASH');
   const [selectedPayer, setSelectedPayer] = useState('');
   const [showPayerModal, setShowPayerModal] = useState(false);
-  
+
   // Deposit payment states
   const [advancePayments, setAdvancePayments] = useState(0.00);
   const [newPaymentAmount, setNewPaymentAmount] = useState('');
@@ -147,6 +148,9 @@ const NewIPDBillingModule: React.FC = () => {
   const [editDepositPaymentMode, setEditDepositPaymentMode] = useState('CASH');
   const [editDepositReference, setEditDepositReference] = useState('');
   const [editDepositReceivedBy, setEditDepositReceivedBy] = useState('');
+
+  // Add Deposit Modal state
+  const [showAddDepositModal, setShowAddDepositModal] = useState(false);
 
   // IPD Billing Form States
   // Room & Accommodation
@@ -196,16 +200,16 @@ const NewIPDBillingModule: React.FC = () => {
   ]);
 
   // Services Management
-  const [selectedServices, setSelectedServices] = useState<Array<{id: string, name: string, amount: number, quantity: number, selected: boolean}>>([]);
-  
+  const [selectedServices, setSelectedServices] = useState<Array<{ id: string, name: string, amount: number, quantity: number, selected: boolean }>>([]);
+
   // IPD Bills List State
   const [ipdBills, setIpdBills] = useState<any[]>([]);
   const [billsLoading, setBillsLoading] = useState(false);
-  
+
   // Patient IPD History State
   const [patientHistory, setPatientHistory] = useState<any[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
-  
+
   // Debug: Track state changes
   useEffect(() => {
   }, [ipdBills]);
@@ -312,7 +316,7 @@ const NewIPDBillingModule: React.FC = () => {
   const [newDepositReference, setNewDepositReference] = useState('');
   const [newDepositReceivedBy, setNewDepositReceivedBy] = useState('');
   const [receiptCounter, setReceiptCounter] = useState(1067);
-  const [openCalendar, setOpenCalendar] = useState<{[key: string]: boolean}>({});
+  const [openCalendar, setOpenCalendar] = useState<{ [key: string]: boolean }>({});
   const [showChangeCharges, setShowChangeCharges] = useState(false);
   const [showAddPharmacy, setShowAddPharmacy] = useState(false);
 
@@ -360,7 +364,7 @@ const NewIPDBillingModule: React.FC = () => {
   const calculateTreatmentCharges = () => operationTheaterCharges + surgeonFees + anesthesiaCharges + equipmentCharges;
   const calculatePharmacyCharges = () => pharmacyBills + ivFluids + bloodProducts + medicalSupplies;
   const calculateOtherCharges = () => physiotherapy + ambulanceServices + medicalCertificate + miscCharges;
-  
+
   const calculateCustomCharges = () => {
     return customFields.reduce((total, field) => {
       if (field.type === 'Per day') {
@@ -371,13 +375,13 @@ const NewIPDBillingModule: React.FC = () => {
   };
 
   const calculateGrossTotal = () => {
-    return calculateRoomCharges() + 
-           calculateMedicalCharges() + 
-           calculateDiagnosticCharges() + 
-           calculateTreatmentCharges() + 
-           calculatePharmacyCharges() + 
-           calculateOtherCharges() + 
-           calculateCustomCharges();
+    return calculateRoomCharges() +
+      calculateMedicalCharges() +
+      calculateDiagnosticCharges() +
+      calculateTreatmentCharges() +
+      calculatePharmacyCharges() +
+      calculateOtherCharges() +
+      calculateCustomCharges();
   };
 
   const calculateNetPayable = () => {
@@ -403,7 +407,7 @@ const NewIPDBillingModule: React.FC = () => {
   };
 
   const updateCustomField = (id: number, field: string, value: string | number) => {
-    setCustomFields(customFields.map(item => 
+    setCustomFields(customFields.map(item =>
       item.id === id ? { ...item, [field]: value } : item
     ));
   };
@@ -563,7 +567,7 @@ const NewIPDBillingModule: React.FC = () => {
   };
 
   const updateStaySegment = (id: number, field: string, value: any) => {
-    setStaySegments(staySegments.map(segment => 
+    setStaySegments(staySegments.map(segment =>
       segment.id === id ? { ...segment, [field]: value } : segment
     ));
   };
@@ -648,7 +652,7 @@ const NewIPDBillingModule: React.FC = () => {
 
       // Add to available services
       setAvailableServices([...availableServices, customService]);
-      
+
       // Auto-add to selected services
       const newSelectedService = {
         id: customService.id,
@@ -689,7 +693,7 @@ const NewIPDBillingModule: React.FC = () => {
       // Reset form
       setCustomServiceName('');
       setCustomServiceAmount('');
-      
+
     } catch (error) {
       logger.error('Error creating custom service:', error);
       toast.error('Failed to add custom service');
@@ -736,11 +740,11 @@ const NewIPDBillingModule: React.FC = () => {
     'FUTURE GENERALI INDIA INSURANCE',
     'BHARTI AXA GENERAL INSURANCE'
   ];
-  
+
   // Service type options
   const serviceTypeOptions = [
     'Room Charge',
-    'Nursing Charge', 
+    'Nursing Charge',
     'Admission Fee',
     'Visit Charge',
     'Consultation Fee',
@@ -857,14 +861,14 @@ const NewIPDBillingModule: React.FC = () => {
   useEffect(() => {
     loadPatients();
     loadIPDBills();
-    
+
   }, []);
 
   // Calculate totals whenever charges, stay segments, services, or advance payments change
   useEffect(() => {
     calculateSummary();
   }, [admissionFee, staySegments, selectedServices, discount, tax, advancePayments]);
-  
+
   // Load patient history and deposits when patient is selected
   useEffect(() => {
     // CRITICAL FIX: Don't load patient data during bill editing to avoid state conflicts
@@ -923,7 +927,7 @@ const NewIPDBillingModule: React.FC = () => {
       setLoading(true);
       logger.log('🔍 IPD BILLING: Loading patients with admission data for billing...');
       logger.log('🔍 IPD BILLING: Hospital ID:', HOSPITAL_ID);
-      
+
       // Get all patients with admissions data using direct supabase query
       // SOLUTION: Use pagination approach to bypass PostgREST's 1000 record limit
       let allPatients: any[] = [];
@@ -1107,8 +1111,8 @@ const NewIPDBillingModule: React.FC = () => {
             'Final formattedDeposit.date': formattedDeposit.date,
             'Date calculation used':
               depositDateOverrides[deposit.id] ? 'OVERRIDE' :
-              deposit.transaction_date ? 'TRANSACTION_DATE' :
-              deposit.created_at ? 'CREATED_AT' : 'TODAY'
+                deposit.transaction_date ? 'TRANSACTION_DATE' :
+                  deposit.created_at ? 'CREATED_AT' : 'TODAY'
           });
 
           return formattedDeposit;
@@ -1141,19 +1145,19 @@ const NewIPDBillingModule: React.FC = () => {
   // Load patient IPD history since admission
   const loadPatientIPDHistory = async () => {
     if (!selectedPatient) return;
-    
+
     try {
       setHistoryLoading(true);
       logger.log('📋 Loading patient IPD history for:', selectedPatient.patient_id);
-      
+
       // Get patient's admission date to filter transactions
       const admissionDate = selectedPatient.admissions?.[0]?.admission_date;
       logger.log('📅 Patient admission date:', admissionDate);
-      
+
       if (!admissionDate) {
         logger.log('⚠️ No admission date found, loading all transactions');
       }
-      
+
       // Load all transactions for this patient since admission
       const { data: transactions, error } = await supabase
         .from('patient_transactions')
@@ -1170,132 +1174,104 @@ const NewIPDBillingModule: React.FC = () => {
         .gte('created_at', admissionDate || '1970-01-01') // Filter from admission date (using created_at as fallback)
         .order('created_at', { ascending: false })
         .limit(100);
-        
+
       if (error) {
         logger.error('❌ Error loading patient history:', error);
         setPatientHistory([]);
         return;
       }
-      
+
       logger.log(`✅ Loaded ${transactions?.length || 0} transactions since admission`);
       setPatientHistory(transactions || []);
-      
+
     } catch (error: any) {
       logger.error('❌ Error loading patient IPD history:', error);
       setPatientHistory([]);
     } finally {
       setHistoryLoading(false);
     }
-  };
-
+  }
+  // Load IPD bills
   const loadIPDBills = async () => {
     try {
       setBillsLoading(true);
-      logger.log('🚨🚨🚨 LOAD IPD BILLS FUNCTION CALLED 🚨🚨🚨');
-      logger.log('💵 Loading IPD bills and deposits from transactions...');
-      
-      // Test database connection first
-      const { data: connectionTest, error: connectionError, count } = await supabase
-        .from('patient_transactions')
-        .select('*', { count: 'exact', head: true });
-        
-      logger.log('🔗 Database connection test:', { count: count, error: connectionError });
-      
-      // Load all IPD-related transactions (bills, deposits, and services)
-      logger.log('🔍 Loading IPD transactions (all deposit and service types)...');
 
-      const { data: ipdTransactions, error: transactionError } = await supabase
-        .from('patient_transactions')
+      // Get all active admissions to map bed info
+      const { data: activeAdmissions, error: admissionError } = await supabase
+        .from('admissions')
         .select(`
-          *,
-          patients(
-            *,
-            admissions:patient_admissions(*)
-          )
+          patient_id,
+          bed_number,
+          room_type,
+          admission_date,
+          discharge_date,
+          ipd_number,
+          doctor_name,
+          treating_doctor,
+          patient:patients(id, patient_id)
         `)
-        .in('transaction_type', ['SERVICE', 'ADMISSION_FEE', 'DEPOSIT', 'ADVANCE_PAYMENT']) // Include all possible deposit and service types
-        .neq('status', 'DELETED')
-        // Temporarily removing hospital_id filter to show all deposits
-        // .eq('hospital_id', HOSPITAL_ID)
-        .order('created_at', { ascending: false })
-        .limit(200);
+        .is('discharge_date', null);
 
-      // Also load IPD bed data to get admission details
-      logger.log('🔍 Loading IPD bed information...');
-      const { data: bedData, error: bedError } = await supabase
-        .from('beds')
-        .select(`
-          *,
-          patients(
-            id,
-            patient_id,
-            first_name,
-            last_name,
-            assigned_doctor,
-            ipd_number
-          )
-        `)
-        .not('patient_id', 'is', null); // Get all beds that have patients, regardless of status
-      
-      if (transactionError) {
-        logger.error('❌ Error loading IPD transactions:', transactionError);
-        setIpdBills([]);
-        toast.error('Failed to load IPD transactions');
-        return;
+      if (admissionError) {
+        logger.error('❌ Error loading active admissions:', admissionError);
       }
 
-      if (bedError) {
-        logger.error('❌ Error loading IPD bed data:', bedError);
-        // Continue without bed data - it's not critical
-      }
-
-      logger.log('✅ Loaded IPD transactions:', ipdTransactions?.length || 0);
-      logger.log('✅ Loaded IPD bed data:', bedData?.length || 0);
-      logger.log('📊 Transaction breakdown:', {
-        total: ipdTransactions?.length || 0,
-        ipdBills: ipdTransactions?.filter(t => t.transaction_type === 'SERVICE' && t.description?.includes('[IPD_BILL]')).length || 0,
-        services: ipdTransactions?.filter(t => t.transaction_type === 'SERVICE' && !t.description?.includes('[IPD_BILL]')).length || 0,
-        deposits: ipdTransactions?.filter(t => t.transaction_type === 'ADMISSION_FEE').length || 0
-      });
-
-      // Create a mapping of patient_id to bed information
+      // Create a map of patient_id -> bed info for quick lookup
       const bedInfoMap = new Map();
-      const bedInfoByPatientDbId = new Map(); // Map by database ID too
-      if (bedData) {
-        logger.log('🛏️ RAW BED DATA:', bedData);
-        bedData.forEach((bed, index) => {
-          logger.log(`🛏️ Bed ${index}:`, {
-            bed_number: bed.bed_number,
-            patient_id: bed.patient_id,
-            patient_db_id: bed.patients?.id,
-            patient_id_string: bed.patients?.patient_id,
-            ipd_number: bed.ipd_number,
-            room_type: bed.room_type,
-            admission_date: bed.admission_date,
-            assigned_doctor: bed.patients?.assigned_doctor,
-            full_bed: bed
-          });
+      const bedInfoByPatientDbId = new Map();
 
-          const bedInfo = {
-            bed_number: bed.bed_number,
-            room_type: bed.room_type,
-            admission_date: bed.admission_date,
-            ipd_number: bed.ipd_number || bed.patients?.ipd_number, // ✅ FIX: Fallback to patient's ipd_number if bed's is cleared
-            assigned_doctor: bed.patients?.assigned_doctor
+      if (activeAdmissions) {
+        activeAdmissions.forEach(admission => {
+          const info = {
+            bed_number: admission.bed_number,
+            room_type: admission.room_type,
+            admission_date: admission.admission_date,
+            ipd_number: admission.ipd_number,
+            assigned_doctor: admission.doctor_name || admission.treating_doctor
           };
 
-          // Map by both patient_id (string) and database ID
-          if (bed.patient_id) {
-            bedInfoMap.set(bed.patient_id, bedInfo);
+          if (admission.patient?.patient_id) {
+            bedInfoMap.set(admission.patient.patient_id, info);
           }
-          if (bed.patients?.id) {
-            bedInfoByPatientDbId.set(bed.patients.id, bedInfo);
-          }
-          if (bed.patients?.patient_id) {
-            bedInfoMap.set(bed.patients.patient_id, bedInfo);
+          if (admission.patient?.id) {
+            bedInfoByPatientDbId.set(admission.patient.id, info);
           }
         });
       }
+
+      // Load all IPD transactions
+      const { data: ipdTransactions, error: billsError } = await supabase
+        .from('patient_transactions')
+        .select(`
+          *,
+          patients (
+            id,
+            first_name,
+            last_name,
+            patient_id,
+            phone,
+            gender,
+            age,
+            ipd_bed_number,
+            admission_date,
+            room_type,
+            ipd_number,
+            assigned_doctor,
+            admissions (
+              admission_date,
+              discharge_date,
+              ipd_number,
+              doctor_name,
+              treating_doctor
+            )
+          )
+        `)
+        .in('transaction_type', ['SERVICE', 'ADMISSION_FEE', 'DEPOSIT', 'ADVANCE_PAYMENT'])
+        .neq('status', 'DELETED')
+        .order('created_at', { ascending: false });
+
+      if (billsError) throw billsError;
+
       logger.log('🛏️ Bed info mapping created for', bedInfoMap.size, 'patients (by string)');
       logger.log('🛏️ Bed info mapping created for', bedInfoByPatientDbId.size, 'patients (by db ID)');
       logger.log('🛏️ Bed info map contents:', Array.from(bedInfoMap.entries()));
@@ -1348,14 +1324,14 @@ const NewIPDBillingModule: React.FC = () => {
               admission_date: bedInfo?.admission_date || transaction.patients?.admission_date,
               // ✅ FIX: Try multiple sources for IPD number
               ipd_number: bedInfo?.ipd_number ||
-                         transaction.patients?.ipd_number ||
-                         transaction.patients?.admissions?.[0]?.ipd_number ||
-                         'N/A',
+                transaction.patients?.ipd_number ||
+                transaction.patients?.admissions?.[0]?.ipd_number ||
+                'N/A',
               assigned_doctor: bedInfo?.assigned_doctor || transaction.patients?.assigned_doctor
             },
             // Add display type for UI - check description for IPD bills
             display_type: (transaction.transaction_type === 'SERVICE' && transaction.description?.includes('[IPD_BILL]')) ? 'IPD Bill' :
-                         transaction.transaction_type === 'SERVICE' ? 'Service Bill' : 'Deposit',
+              transaction.transaction_type === 'SERVICE' ? 'Service Bill' : 'Deposit',
             display_icon: transaction.transaction_type === 'SERVICE' ? '🧾' : '💰'
           };
         });
@@ -1380,7 +1356,7 @@ const NewIPDBillingModule: React.FC = () => {
 
 
         logger.log('🔄 Setting IPD bills state with:', enrichedTransactions.length, 'transactions');
-        
+
         // Sort by date descending to show latest first - CRITICAL FIX: Use transaction_date (user billing date) not created_at
         enrichedTransactions.sort((a, b) => {
           // Use transaction_date if available (user's billing date), otherwise fall back to created_at
@@ -1409,7 +1385,7 @@ const NewIPDBillingModule: React.FC = () => {
           duration: 3000
         });
       }
-      
+
     } catch (error: any) {
       logger.error('❌ CATCH: Failed to load IPD bills:', error);
       setIpdBills([]); // Set empty array as fallback
@@ -1424,14 +1400,14 @@ const NewIPDBillingModule: React.FC = () => {
       return rows.map(row => {
         if (row.id === id) {
           const updatedRow = { ...row, [field]: value };
-          
+
           // Update doctor and particulars based on service type
           if (field === 'serviceType') {
             const serviceType = value as string;
-            
+
             // Auto-populate particulars with service type name
             updatedRow.particulars = serviceType;
-            
+
             // Update doctor based on service type
             if (serviceType === 'Pathology' || serviceType === 'Laboratory') {
               updatedRow.doctor = 'Lab';
@@ -1441,33 +1417,33 @@ const NewIPDBillingModule: React.FC = () => {
               // Use patient's doctor
               const latestAdmission = selectedPatient.admissions?.[0];
               let doctorName = 'N/A';
-              
+
               if (selectedPatient.assigned_doctor) {
                 doctorName = selectedPatient.assigned_doctor;
-              } else if ((latestAdmission as any)?.doctor_name) {
+              } else if (latestAdmission && (latestAdmission as any).doctor_name) {
                 doctorName = (latestAdmission as any).doctor_name;
-              } else if ((latestAdmission as any)?.treating_doctor) {
+              } else if (latestAdmission && (latestAdmission as any).treating_doctor) {
                 doctorName = (latestAdmission as any).treating_doctor;
               } else if (selectedPatient.assigned_doctors && selectedPatient.assigned_doctors.length > 0) {
                 doctorName = selectedPatient.assigned_doctors[0].name;
               }
-              
+
               updatedRow.doctor = doctorName;
             } else {
               updatedRow.doctor = '';
             }
           }
-          
+
           // Recalculate row total
           if (field === 'quantity' || field === 'unitPrice' || field === 'discount') {
             const subtotal = updatedRow.quantity * updatedRow.unitPrice;
             const discountAmount = (subtotal * updatedRow.discount) / 100;
             const total = subtotal - discountAmount;
-            
+
             updatedRow.taxes = 0; // Remove tax calculation
             updatedRow.total = total;
           }
-          
+
           return updatedRow;
         }
         return row;
@@ -1516,22 +1492,22 @@ const NewIPDBillingModule: React.FC = () => {
     logger.log('🏥 DEPOSIT: addAdvancePayment function called');
     logger.log('🏥 DEPOSIT: newPaymentAmount:', newPaymentAmount);
     logger.log('🏥 DEPOSIT: selectedPatient:', selectedPatient);
-    
+
     const amount = parseFloat(newPaymentAmount);
     logger.log('🏥 DEPOSIT: parsed amount:', amount);
-    
+
     if (!amount || amount <= 0) {
       logger.log('🏥 DEPOSIT: Invalid amount error');
       toast.error('Please enter a valid amount');
       return;
     }
-    
+
     if (!selectedPatient) {
       logger.log('🏥 DEPOSIT: No patient selected error');
       toast.error('Please select a patient first');
       return;
     }
-    
+
     // Generate auto-incremented receipt number
     const nextReceiptCounter = receiptCounter + 1;
     const newReceiptNo = `Y${nextReceiptCounter}`;
@@ -1547,7 +1523,7 @@ const NewIPDBillingModule: React.FC = () => {
     });
 
     // Deposit object will be created by database and loaded via loadPatientDeposits()
-    
+
     try {
       // Validate patient ID
       if (!selectedPatient?.id) {
@@ -1681,7 +1657,7 @@ const NewIPDBillingModule: React.FC = () => {
           hint: dbError.hint,
           code: dbError.code
         });
-        
+
         // More specific error messages
         if (dbError.code === '23503') {
           toast.error('Invalid patient or hospital reference. Please refresh and try again.');
@@ -1711,7 +1687,7 @@ const NewIPDBillingModule: React.FC = () => {
       logger.error('❌ Database connection error:', error);
       toast.error('Database connection failed. Please check your connection.');
     }
-    
+
     // CRITICAL FIX: Only reload from database - don't add to local state with potentially wrong dates
     toast.success('Deposit saved to database! Reloading...');
 
@@ -1834,7 +1810,7 @@ const NewIPDBillingModule: React.FC = () => {
     logger.log('🖨️ Print function called');
     logger.log('💰 Deposit history length:', depositHistory.length);
     logger.log('💳 Deposit history data:', depositHistory);
-    
+
     try {
       // Simple approach - just use window.print with CSS media queries
       window.print();
@@ -1857,13 +1833,13 @@ const NewIPDBillingModule: React.FC = () => {
     setPatientSearchTerm(`${patient.first_name} ${patient.last_name || ''}`.trim());
     setShowPatientDropdown(false);
     setShowPatientModal(false);
-    
+
     // Keep the current billing date when selecting a patient (don't override user's date selection)
     // setBillingDate(getLocalDateString()); // Removed to preserve user's selected date
-    
+
     // Update doctor names in billing rows
     updateDoctorNamesForPatient(patient);
-    
+
     toast.success(`Selected patient: ${patient.first_name} ${patient.last_name || ''}`);
   };
 
@@ -1872,10 +1848,10 @@ const NewIPDBillingModule: React.FC = () => {
     logger.log('🔍 DEBUG: Patient assigned_doctor:', patient.assigned_doctor);
     logger.log('🔍 DEBUG: Patient assigned_doctors:', patient.assigned_doctors);
     logger.log('🔍 DEBUG: Patient admissions:', patient.admissions);
-    
+
     const latestAdmission = patient.admissions?.[0];
     let doctorName = 'N/A';
-    
+
     // Try multiple sources for doctor name
     if (patient.assigned_doctor) {
       doctorName = patient.assigned_doctor;
@@ -1896,7 +1872,7 @@ const NewIPDBillingModule: React.FC = () => {
     logger.log('🏥 Final doctor name:', doctorName);
 
     // Update all billing rows with the correct doctor name based on service type
-    setBillingRows(rows => 
+    setBillingRows(rows =>
       rows.map(row => {
         if (row.serviceType === 'Pathology' || row.serviceType === 'Laboratory') {
           return { ...row, doctor: 'Lab' };
@@ -1912,9 +1888,9 @@ const NewIPDBillingModule: React.FC = () => {
   const clearPatientSelection = () => {
     setSelectedPatient(null);
     setPatientSearchTerm('');
-    
+
     // Reset doctor names based on service type
-    setBillingRows(rows => 
+    setBillingRows(rows =>
       rows.map(row => {
         if (row.serviceType === 'Pathology' || row.serviceType === 'Laboratory') {
           return { ...row, doctor: 'Lab' };
@@ -2043,9 +2019,9 @@ const NewIPDBillingModule: React.FC = () => {
       // Use the billing date directly to avoid timezone issues
       const formattedBillingDate = billingDate || getLocalDateString();
 
-      
+
       // Store ACTUAL services data that are being billed
-      const actualServicesData = [];
+      const actualServicesData: any[] = [];
 
       // Add admission fee if set
       if (admissionFee > 0) {
@@ -2099,8 +2075,8 @@ const NewIPDBillingModule: React.FC = () => {
       // Add selected services - EACH SERVICE AS SEPARATE ITEM
       if (selectedServices && selectedServices.length > 0) {
         selectedServices.filter(service => service.selected && service.amount > 0).forEach((service, index) => {
-          const serviceQuantity = parseInt(service.quantity) || 1;
-          const serviceUnitPrice = parseFloat(service.amount) || 0;
+          const serviceQuantity = parseInt(service.quantity as any) || 1;
+          const serviceUnitPrice = parseFloat(service.amount as any) || 0;
           const serviceTotal = serviceUnitPrice * serviceQuantity;
 
           actualServicesData.push({
@@ -2116,7 +2092,6 @@ const NewIPDBillingModule: React.FC = () => {
             doctor: '',
             date: formattedBillingDate
           });
-          logger.log(`📋 Added individual service: ${service.name} - Qty: ${serviceQuantity}, Unit: ₹${serviceUnitPrice}, Total: ₹${serviceTotal}`);
         });
       }
 
@@ -2133,130 +2108,62 @@ const NewIPDBillingModule: React.FC = () => {
 
       const billingRowsData = JSON.stringify(actualServicesData);
 
-      logger.log('💾 ACTUAL services being stored:');
-      logger.log('   - Admission Fee:', admissionFee);
-      logger.log('   - Stay Segments:', staySegments?.length || 0);
-      logger.log('   - Selected Services count:', selectedServices?.filter(s => s.selected)?.length || 0);
-      logger.log('🔍 BILLING ROWS DATA DETAILS:');
-      logger.log('   - actualServicesData length:', actualServicesData.length);
-      logger.log('   - billingRowsData length:', billingRowsData.length);
-      logger.log('   - First 500 chars of billingRowsData:', billingRowsData.substring(0, 500));
-
-      // Check if any stay segments have chargeBreakdown
-      actualServicesData.forEach((item, index) => {
-        if (item.chargeBreakdown) {
-          logger.log(`   - Item ${index} has chargeBreakdown:`, item.chargeBreakdown);
-        }
-      });
-      logger.log('   - Selected Services details:');
-      selectedServices?.filter(s => s.selected)?.forEach(service => {
-        logger.log(`     * ${service.name}: ₹${service.amount}`);
-      });
-      logger.log('   - Total services to store:', actualServicesData.length);
-      logger.log('💾 Complete services data being stored:');
-      actualServicesData.forEach((service, index) => {
-        logger.log(`   ${index + 1}. ${service.particulars} (${service.serviceType}) - ₹${service.total}`);
-      });
-      logger.log('💾 Services JSON length:', billingRowsData.length, 'characters');
-
-      const transactionData = {
-        patient_id: selectedPatient.id,
-        hospital_id: HOSPITAL_ID,
-        transaction_type: 'SERVICE',
-        description: `[IPD_BILL] IPD Comprehensive Bill - ${billReceiptNo} | Admission: ₹${admissionFee} | Stay: ₹${calculateTotalStayCharges()} | Services: ₹${calculateSelectedServicesTotal()} | Discount: ₹${discount} | Tax: ₹${tax} | Net: ₹${netPayable} | BILLING_ROWS: ${billingRowsData}`,
-        amount: netPayable,
-        payment_mode: finalPaymentMode.toUpperCase(),
-        doctor_id: null,
-        doctor_name: null,
+      // Create IPDBill object for BillingService
+      const newBill: IPDBill = {
+        id: isEditing ? editingBill.id : undefined,
+        billId: billReceiptNo,
+        patientId: selectedPatient.id,
+        patientName: `${selectedPatient.first_name} ${selectedPatient.last_name || ''}`.trim(),
+        admissionDate: selectedPatient.admissions?.[0]?.admission_date || formattedBillingDate,
+        dischargeDate: formattedBillingDate,
+        admissionCharges: admissionFee,
+        staySegments: staySegments.map(s => ({
+          id: s.id?.toString() || '',
+          roomType: s.roomType as any,
+          startDate: s.startDate,
+          endDate: s.endDate,
+          bedCharge: s.bedChargePerDay,
+          rmoCharge: s.rmoChargePerDay,
+          nursingCharge: s.nursingChargePerDay,
+          days: calculateDays(s.startDate, s.endDate),
+          totalCharge: calculateSegmentTotal(s)
+        })),
+        services: selectedServices.filter(s => s.selected).map(s => ({
+          name: s.name,
+          selected: true,
+          amount: parseFloat(s.amount as any) || 0
+        })),
+        totalStayCharges: calculateTotalStayCharges(),
+        totalServiceCharges: calculateSelectedServicesTotal(),
+        discount: discount,
+        totalAmount: netPayable,
         status: 'PENDING',
-        transaction_reference: billReceiptNo,
-        transaction_date: formattedBillingDate,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        billDate: formattedBillingDate,
+        paymentMode: paymentMode as any
       };
 
-      logger.log(`💾 ${isEditing ? 'Updating' : 'Saving'} IPD bill transaction to Supabase:`, transactionData);
+      logger.log(`💾 ${isEditing ? 'Updating' : 'Saving'} IPD bill via BillingService:`, newBill);
 
-      logger.log('🔍 Transaction details:', {
-        patient_id: transactionData.patient_id,
-        transaction_type: transactionData.transaction_type,
-        hospital_id: transactionData.hospital_id,
-        amount: transactionData.amount,
-        billingDate: transactionData.transaction_date,
-        originalBillingDate: billingDate,
-        formattedBillingDate: formattedBillingDate,
-        payment_mode: transactionData.payment_mode,
-        isEditing: isEditing
-      });
+      // Save using BillingService (Azure Backend)
+      await BillingService.saveIPDBill(newBill);
 
-      let savedTransaction, error;
-
-      if (isEditing) {
-        // Update existing transaction
-        const { data, error: updateError } = await supabase
-          .from('patient_transactions')
-          .update(transactionData)
-          .eq('id', editingBill.id)
-          .select()
-          .single();
-        savedTransaction = data;
-        error = updateError;
-      } else {
-        // Create new transaction
-        const { data, error: insertError } = await supabase
-          .from('patient_transactions')
-          .insert([transactionData])
-          .select()
-          .single();
-        savedTransaction = data;
-        error = insertError;
-      }
-
-      logger.log('📊 Supabase insert result:', { data: savedTransaction, error });
-
-      if (error) {
-        logger.error('❌ Bill transaction save error:', error);
-        logger.error('❌ Error details:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code
-        });
-        
-        // More specific error messages based on error code
-        if (error.code === '23503') {
-          toast.error('Invalid patient or hospital reference. Please refresh and try again.');
-        } else if (error.code === '23505') {
-          toast.error('Duplicate bill reference. Please try again.');
-        } else if (error.message?.includes('violates foreign key')) {
-          toast.error('Invalid reference data. Please check patient selection.');
-        } else if (error.message?.includes('null value')) {
-          toast.error('Missing required information. Please fill all required fields.');
-        } else {
-          toast.error(`Database error: ${error.message || 'Bill could not be saved'}`);
-        }
-        
-        // Don't proceed if save failed
-        return;
-      }
-
-      logger.log(`✅ IPD bill transaction ${isEditing ? 'updated' : 'saved'}:`, savedTransaction);
+      logger.log(`✅ IPD bill ${isEditing ? 'updated' : 'saved'} successfully`);
       toast.success(`IPD Bill ${isEditing ? 'updated' : 'generated'} successfully! Bill #${billReceiptNo}`);
-      
+
       // Refresh the IPD bills list
       await loadIPDBills();
-      
+
       // Reset form or redirect
       setShowCreateBill(false);
       setEditingBill(null);
       resetForm();
-      
+
       // Show success message with print option
       toast.success(
         <div>
           <p>IPD Bill saved successfully!</p>
-          <button 
-            onClick={() => handlePrintBill(savedTransaction)}
+          <button
+            onClick={() => handlePrintBill({ ...newBill, transaction_reference: billReceiptNo })}
             className="mt-2 px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
           >
             Print Bill
@@ -2264,1970 +2171,40 @@ const NewIPDBillingModule: React.FC = () => {
         </div>,
         { duration: 5000 }
       );
-      
-    } catch (error) {
-      logger.error('❌ Error generating bill:', error);
-      logger.error('❌ Full error object:', JSON.stringify(error, null, 2));
-      toast.error(`Failed to generate bill: ${error?.message || 'Unknown error'}`);
-    }
-  };
 
-  // Handler for Add Deposit button
-  const [showAddDepositModal, setShowAddDepositModal] = useState(false);
-  
-  const handleAddDeposit = () => {
-
-    if (!selectedPatient) {
-      toast.error('Please select a patient first');
-      return;
-    }
-
-    // CRITICAL: Use the billing date selected by user, or today's date
-    const userSelectedDate = ensureDateFormat(billingDate);
-    logger.log('🚨 DEPOSIT MODAL DATE SETUP:', {
-      'Current billingDate from UI': billingDate,
-      'getLocalDateString()': getLocalDateString(),
-      'ensureDateFormat result': userSelectedDate,
-      'Will use in modal': userSelectedDate
-    });
-
-
-    setNewPaymentDate(userSelectedDate);
-    setShowAddDepositModal(true);
-
-  };
-
-  const handleSaveDeposit = async () => {
-    logger.log('💰 MODAL: Save Deposit clicked!');
-    logger.log('💰 MODAL: Current values:', {
-      amount: newPaymentAmount,
-      mode: newPaymentMode,
-      reference: referenceNo,
-      receivedBy: receivedBy,
-      patient: selectedPatient?.first_name
-    });
-    
-    try {
-      // Use the existing addAdvancePayment function
-      await addAdvancePayment();
-      
-      // Close the modal after successful save
-      setShowAddDepositModal(false);
-      
-    } catch (error) {
-      logger.error('❌ Error in handleSaveDeposit:', error);
-      toast.error('Failed to save deposit. Please try again.');
-    }
-  };
-
-  // Handler for View Receipt button
-  const handleViewReceipt = (receiptId: string) => {
-    // Find the deposit by receipt ID
-    const deposit = depositHistory.find(d => d.receiptNo === receiptId);
-    if (!deposit) {
-      toast.error('Deposit not found');
-      return;
-    }
-
-    // Open receipt in new window for viewing
-    const viewDepositReceipt = () => {
-      const getCurrentTime = () => {
-        const now = new Date();
-        return now.toLocaleTimeString('en-IN', {
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-          hour12: true
-        });
-      };
-
-      const convertToWords = (amount: number): string => {
-        if (amount === 0) return 'Zero';
-        const units = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
-        const teens = ['Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
-        const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
-
-        if (amount < 10) return units[amount];
-        if (amount < 20) return teens[amount - 10];
-        if (amount < 100) return tens[Math.floor(amount / 10)] + (amount % 10 ? ' ' + units[amount % 10] : '');
-        if (amount < 1000) return units[Math.floor(amount / 100)] + ' Hundred' + (amount % 100 ? ' ' + convertToWords(amount % 100) : '');
-        if (amount < 100000) return convertToWords(Math.floor(amount / 1000)) + ' Thousand' + (amount % 1000 ? ' ' + convertToWords(amount % 1000) : '');
-        return 'Amount Too Large';
-      };
-
-      const viewContent = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>View Advance Deposit Receipt - ${deposit.receiptNo}</title>
-          <style>
-            body {
-              font-family: Arial, sans-serif;
-              margin: 20px;
-              background: white;
-            }
-            .receipt-view {
-              max-width: 800px;
-              margin: 0 auto;
-              padding: 20px;
-              border: 1px solid #ddd;
-              border-radius: 5px;
-            }
-            .print-button {
-              position: fixed;
-              top: 20px;
-              right: 20px;
-              background: #0056B3;
-              color: white;
-              border: none;
-              padding: 10px 20px;
-              border-radius: 5px;
-              cursor: pointer;
-              font-size: 14px;
-            }
-            .print-button:hover {
-              background: #004494;
-            }
-          </style>
-        </head>
-        <body>
-          <button class="print-button" onclick="window.print()">🖨️ Print Receipt</button>
-          <div class="receipt-view">
-            <!-- Header -->
-            <div style="text-align: center; margin-bottom: 30px; border-bottom: 3px solid #0056B3; padding-bottom: 20px;">
-              <h1 style="color: #0056B3; font-size: 32px; font-weight: bold; margin: 0;">HOSPITAL CRM PRO</h1>
-              <p style="color: black; font-size: 16px; margin: 8px 0;">Complete Healthcare Management System</p>
-              <p style="color: black; font-size: 14px; margin: 0;">📍 Your Hospital Address | 📞 Contact Number | 📧 Email</p>
-            </div>
-
-            <!-- IPD DEPOSIT Title at Top Center -->
-            <div style="text-align: center; margin-bottom: 25px;">
-              <h1 style="font-size: 28px; font-weight: bold; color: black; margin: 0; letter-spacing: 2px;">IPD DEPOSIT</h1>
-            </div>
-
-            <!-- Receipt Title -->
-            <div style="text-align: center; margin-bottom: 25px;">
-              <h2 style="color: black; font-size: 20px; font-weight: bold; margin: 0;">Advance Deposit Receipt</h2>
-              <p style="color: black; font-size: 16px; margin: 10px 0;">Receipt No: <strong>${deposit.receiptNo}</strong></p>
-            </div>
-
-            <!-- Date and Time -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; margin-bottom: 25px; font-size: 16px; color: black;">
-              <div>
-                <p style="margin: 5px 0;"><strong>DATE:</strong> ${new Date().toLocaleDateString('en-IN')}</p>
-                <p style="margin: 5px 0;"><strong>TIME:</strong> ${getCurrentTime()}</p>
-              </div>
-              <div style="text-align: right;">
-                <p style="margin: 5px 0;"><strong>RECEIPT DATE:</strong> ${deposit.date}</p>
-                <p style="margin: 5px 0;"><strong>PAYMENT MODE:</strong> ${deposit.paymentMode || 'CASH'}</p>
-              </div>
-            </div>
-
-            <!-- Patient Information -->
-            <div style="margin-bottom: 30px; border: 2px solid #ddd; padding: 20px; background-color: #f9f9f9;">
-              <h3 style="color: black; font-size: 18px; font-weight: bold; margin-bottom: 15px; border-bottom: 1px solid #ddd; padding-bottom: 8px;">PATIENT DETAILS</h3>
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                <div>
-                  <p style="color: black; margin: 6px 0;"><strong>NAME:</strong> ${bill.patients?.first_name || ''} ${bill.patients?.last_name || ''}</p>
-                  <p style="color: black; margin: 6px 0;"><strong>AGE/SEX:</strong> ${bill.patients?.age || 'N/A'} years / ${bill.patients?.gender || 'N/A'}</p>
-                  <p style="color: black; margin: 6px 0;"><strong>MOBILE:</strong> ${bill.patients?.phone || 'N/A'}</p>
-                </div>
-                <div>
-                  <p style="color: black; margin: 6px 0;"><strong>PATIENT ID:</strong> ${bill.patients?.patient_id || 'N/A'}</p>
-                  <p style="color: black; margin: 6px 0;"><strong>ADMISSION DATE:</strong> ${bill.patients?.admissions?.[0]?.admission_date ? new Date(bill.patients.admissions[0].admission_date).toLocaleDateString('en-IN') : 'N/A'}</p>
-                  <p style="color: black; margin: 6px 0;"><strong>ROOM/BED:</strong> ${bill.patients?.admissions?.[0]?.bed_number || 'N/A'}</p>
-                </div>
-              </div>
-            </div>
-
-            <!-- Deposit Details -->
-            <div style="margin-bottom: 30px;">
-              <h3 style="color: black; font-size: 18px; font-weight: bold; margin-bottom: 15px; border-bottom: 1px solid #ddd; padding-bottom: 8px;">ADVANCE DEPOSIT DETAILS</h3>
-              <table style="width: 100%; border-collapse: collapse; font-size: 16px;">
-                <thead>
-                  <tr style="background-color: #f0f0f0;">
-                    <th style="border: 1px solid black; padding: 12px; text-align: left; color: black;">Description</th>
-                    <th style="border: 1px solid black; padding: 12px; text-align: center; color: black;">Payment Mode</th>
-                    <th style="border: 1px solid black; padding: 12px; text-align: center; color: black;">Reference</th>
-                    <th style="border: 1px solid black; padding: 12px; text-align: right; color: black;">Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td style="border: 1px solid black; padding: 12px; color: black;">IPD Advance Payment</td>
-                    <td style="border: 1px solid black; padding: 12px; text-align: center; color: black;">${deposit.paymentMode || 'CASH'}</td>
-                    <td style="border: 1px solid black; padding: 12px; text-align: center; color: black;">${deposit.reference || '-'}</td>
-                    <td style="border: 1px solid black; padding: 12px; text-align: right; color: black; font-weight: bold;">₹${deposit.amount?.toFixed(2) || '0.00'}</td>
-                  </tr>
-                  <tr style="background-color: #f0f0f0;">
-                    <td colspan="3" style="border: 1px solid black; padding: 15px; text-align: center; color: black; font-weight: bold; font-size: 18px;">TOTAL ADVANCE DEPOSIT</td>
-                    <td style="border: 1px solid black; padding: 15px; text-align: right; color: black; font-weight: bold; font-size: 18px;">₹${deposit.amount?.toFixed(2) || '0.00'}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <!-- Amount in Words -->
-            <div style="text-align: center; margin-bottom: 25px; padding: 15px; background-color: #f9f9f9; border: 1px solid #ddd;">
-              <p style="font-size: 16px; color: black; margin: 0;"><strong>Amount in Words:</strong> ${convertToWords(deposit.amount || 0)} Rupees Only</p>
-            </div>
-
-            <!-- Important Notice -->
-            <div style="margin-bottom: 30px; padding: 15px; background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px;">
-              <h4 style="color: black; font-size: 16px; font-weight: bold; margin-bottom: 8px;">Important Notice:</h4>
-              <ul style="color: black; font-size: 14px; margin: 0; padding-left: 20px;">
-                <li>This advance payment will be adjusted against your final bill</li>
-                <li>Please keep this receipt for your records</li>
-                <li>This receipt is valid for all insurance and reimbursement claims</li>
-                <li>For any queries, please contact the billing department</li>
-              </ul>
-            </div>
-
-            <!-- Signature Section -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 40px; margin-bottom: 30px;">
-              <div style="text-align: center; border-top: 2px solid black; padding-top: 8px;">
-                <p style="font-size: 14px; color: black; margin: 0;">Patient/Guardian Signature</p>
-              </div>
-              <div style="text-align: center; border-top: 2px solid black; padding-top: 8px;">
-                <p style="font-size: 14px; color: black; margin: 0;">Authorized Signature</p>
-                <p style="font-size: 12px; color: black; margin: 5px 0 0 0;">Billing Department</p>
-              </div>
-            </div>
-
-            <!-- Footer -->
-            <div style="text-align: center; font-size: 12px; color: #666; border-top: 1px solid #ddd; padding-top: 15px; margin-top: 30px;">
-              <p style="margin: 0;">This is a computer-generated receipt and does not require a physical signature.</p>
-              <p style="margin: 5px 0 0 0;">Generated on ${new Date().toLocaleDateString('en-IN')} at ${getCurrentTime()}</p>
-            </div>
-          </div>
-        </body>
-        </html>
-      `;
-
-      const viewWindow = window.open('', '_blank');
-      if (viewWindow) {
-        viewWindow.document.write(viewContent);
-        viewWindow.document.close();
-      }
-    };
-
-    viewDepositReceipt();
-    toast.success('Opening deposit receipt...');
-  };
-
-  // Handler for Mark Bill as Completed
-  const handleMarkCompleted = async (bill: any) => {
-    if (!bill?.id) {
-      toast.error('Invalid bill selected');
-      return;
-    }
-
-    try {
-      logger.log('✅ Marking bill as completed:', bill.id);
-      
-      const { data: updatedBill, error } = await supabase
-        .from('patient_transactions')
-        .update({ 
-          status: 'COMPLETED',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', bill.id)
-        .select()
-        .single();
-
-      if (error) {
-        logger.error('❌ Error updating bill status:', error);
-        toast.error(`Failed to mark bill as completed: ${error.message}`);
-        return;
-      }
-
-      logger.log('✅ Bill marked as completed:', updatedBill);
-      toast.success(`Bill #${bill.transaction_reference || bill.id} marked as completed!`);
-      
-      // Refresh the bills list
-      await loadIPDBills();
-      
     } catch (error: any) {
-      logger.error('❌ Error in handleMarkCompleted:', error);
-      toast.error(`Failed to mark bill as completed: ${error?.message || 'Unknown error'}`);
+      logger.error('❌ Failed to generate bill:', error);
+      toast.error(`Failed to generate bill: ${error.message || error}`);
     }
   };
 
-  // Handler for View Bill button
-  const handleViewBill = (bill: any) => {
-    const transactionType = bill.display_type || 
-      ((bill.transaction_type === 'SERVICE' && bill.description?.includes('[IPD_BILL]')) ? 'IPD Bill' : 
-       bill.transaction_type === 'SERVICE' ? 'Service Bill' : 'Deposit');
-    const billDetails = `
-${transactionType} Details:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Reference: ${bill.transaction_reference || bill.id}
-Type: ${transactionType} ${bill.display_icon || (bill.transaction_type === 'SERVICE' ? '🧾' : '💰')}
-Patient: ${bill.patients?.first_name || ''} ${bill.patients?.last_name || ''}
-Amount: ₹${bill.amount?.toLocaleString() || '0'}
-Status: ${bill.status || 'UNKNOWN'}
-Date: ${bill.transaction_date ? new Date(bill.transaction_date).toLocaleDateString() : (bill.created_at ? new Date(bill.created_at).toLocaleDateString() : 'N/A')}
-Payment Mode: ${bill.payment_mode || 'N/A'}
-Doctor: ${bill.doctor_name || 'N/A'}
-Description: ${bill.description || 'N/A'}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    `.trim();
-    
-  };
-
-  // Handler for Edit Bill button
-  const handleEditBill = (bill: any) => {
-    logger.log('🚨🚨🚨 CRITICAL DEBUG - EDIT BILL CALLED 🚨🚨🚨');
-
-    // CRITICAL: Set editing flag to prevent state interference
-    isEditingRef.current = true;
-    logger.log('🔒 EDITING REF SET TO TRUE');
-
-    // CRITICAL: Let's see what the ACTUAL saved data looks like
-    if (bill.description && bill.description.includes('BILLING_ROWS:')) {
-      const billingRowsMatch = bill.description.match(/BILLING_ROWS:\s*(\[[\s\S]*)/);
-      if (billingRowsMatch) {
-        try {
-          let rawJson = billingRowsMatch[1];
-          const lastBracket = rawJson.lastIndexOf(']');
-          if (lastBracket !== -1) {
-            rawJson = rawJson.substring(0, lastBracket + 1);
-          }
-          const parsedRows = JSON.parse(rawJson);
-
-          logger.log('🔍 CRITICAL: ACTUAL SAVED BILLING DATA:');
-          parsedRows.forEach((row, index) => {
-            if (row.serviceType?.includes('Room') || row.particulars?.includes('Room')) {
-              logger.log(`🏨 ACTUAL Room/Stay row ${index}:`, {
-                serviceType: row.serviceType,
-                particulars: row.particulars,
-                unitPrice: row.unitPrice,
-                total: row.total,
-                quantity: row.quantity,
-                chargeBreakdown: row.chargeBreakdown,
-                hasChargeBreakdown: !!row.chargeBreakdown
-              });
-
-              // This is the critical test - what will our regex extract?
-              const testParticulars = row.particulars || row.serviceType || '';
-              const testUpper = testParticulars.toUpperCase();
-              const testMatch = testUpper.match(/^(.+?)\s*-\s*ROOM STAY/);
-              logger.log(`🧪 REGEX TEST for "${testParticulars}":`, {
-                input: testParticulars,
-                regexMatch: testMatch,
-                expectedRoomType: testMatch ? testMatch[1].trim() : 'NO MATCH - WILL DEFAULT TO GENERAL WARD'
-              });
-            }
-          });
-        } catch (e) {
-          logger.error('❌ Failed to parse saved billing data:', e);
-        }
-      }
-    } else {
-      logger.log('⚠️ NO BILLING_ROWS found in description - this is the problem!');
-    }
-
-    try {
-      // Parse billing rows from the saved bill data
-      let savedBillingRows = [];
-
-      logger.log('🔍 Checking bill description for edit:', bill.description?.length ? 'Found description' : 'No description');
-
-      if (bill.description && bill.description.includes('BILLING_ROWS:')) {
-        try {
-          // Try multiple regex patterns to match billing rows
-          let billingRowsMatch = bill.description.match(/BILLING_ROWS:\s*(\[.*\])$/);
-          if (!billingRowsMatch) {
-            billingRowsMatch = bill.description.match(/BILLING_ROWS:\s*(\[[\s\S]*?\])(?:\s|$)/);
-          }
-          if (!billingRowsMatch) {
-            // More liberal match for any array structure after BILLING_ROWS:
-            billingRowsMatch = bill.description.match(/BILLING_ROWS:\s*(\[[\s\S]*)/);
-          }
-
-          if (billingRowsMatch) {
-            let billingRowsJson = billingRowsMatch[1];
-            logger.log('🔍 RAW BILLING ROWS JSON:', billingRowsJson);
-
-            // Clean up the JSON string if it has trailing content
-            const lastBracket = billingRowsJson.lastIndexOf(']');
-            if (lastBracket !== -1) {
-              billingRowsJson = billingRowsJson.substring(0, lastBracket + 1);
-            }
-            logger.log('🔍 CLEANED BILLING ROWS JSON:', billingRowsJson);
-
-            savedBillingRows = JSON.parse(billingRowsJson);
-            logger.log('📝 Successfully parsed billing rows:', savedBillingRows);
-            logger.log('🔍 PARSED BILLING ROWS DETAILS:');
-            savedBillingRows.forEach((row, index) => {
-              logger.log(`   Row ${index}:`, {
-                serviceType: row.serviceType,
-                particulars: row.particulars,
-                chargeBreakdown: row.chargeBreakdown,
-                hasChargeBreakdown: !!row.chargeBreakdown,
-                unitPrice: row.unitPrice,
-                quantity: row.quantity,
-                total: row.total
-              });
-            });
-          } else {
-            logger.warn('⚠️ No billing rows match found in description');
-            logger.log('🔍 Description content:', bill.description);
-          }
-        } catch (parseError) {
-          logger.error('❌ Error parsing billing rows JSON:', parseError);
-        }
-      } else {
-        logger.warn('⚠️ No BILLING_ROWS found in description, using default structure');
-      }
-
-      // If no saved billing rows, try to reconstruct from bill description or create exact structure
-      if (savedBillingRows.length === 0) {
-        const billAmount = bill.amount || 0;
-        const descriptionText = bill.description || '';
-
-        logger.log('📋 No billing rows found, reconstructing from bill data. Amount:', billAmount);
-        logger.log('📝 Description text:', descriptionText);
-
-        // Try to extract exact values from description
-        const admissionMatch = descriptionText.match(/Admission:\s*₹(\d+(?:\.\d{2})?)/);
-        const stayMatch = descriptionText.match(/Stay:\s*₹(\d+(?:\.\d{2})?)/);
-        const serviceMatch = descriptionText.match(/Services:\s*₹(\d+(?:\.\d{2})?)/);
-        const discountMatch = descriptionText.match(/Discount:\s*₹(\d+(?:\.\d{2})?)/);
-        const taxMatch = descriptionText.match(/Tax:\s*₹(\d+(?:\.\d{2})?)/);
-
-        const extractedAdmission = admissionMatch ? (parseFloat(admissionMatch[1]) || 0) : 0;
-        const extractedStay = stayMatch ? (parseFloat(stayMatch[1]) || 0) : 0;
-        const extractedServices = serviceMatch ? (parseFloat(serviceMatch[1]) || 0) : 0;
-        const extractedDiscount = discountMatch ? (parseFloat(discountMatch[1]) || 0) : 0;
-        const extractedTax = taxMatch ? (parseFloat(taxMatch[1]) || 0) : 0;
-
-        logger.log('💰 Extracted values:', {
-          admission: extractedAdmission,
-          stay: extractedStay,
-          services: extractedServices,
-          discount: extractedDiscount,
-          tax: extractedTax,
-          total: billAmount
-        });
-        logger.log('🔍 AMOUNT DEBUGGING - Description parsing:');
-        logger.log('   - Original bill amount:', billAmount);
-        logger.log('   - Admission match:', admissionMatch);
-        logger.log('   - Stay match:', stayMatch);
-        logger.log('   - Services match:', serviceMatch);
-
-        // Create billing rows based on extracted or calculated values
-        savedBillingRows = [];
-
-        if (extractedAdmission > 0 || extractedStay > 0 || extractedServices > 0) {
-          // Use extracted values
-          if (extractedStay > 0) {
-            savedBillingRows.push({
-              id: '1',
-              serviceType: 'Room & Stay Charges',
-              particulars: 'Room & Stay Charges',
-              emergency: 'Yes',
-              doctor: '',
-              date: billingDate,
-              quantity: 1,
-              unitPrice: extractedStay,
-              discount: 0,
-              taxes: 0,
-              total: extractedStay
-            });
-          }
-
-          // Individual services should be stored separately in BILLING_ROWS
-
-          // If we have admission fee extracted, we'll set it later in the main extraction
-          // Don't set it here to avoid duplication
-        } else {
-          // Fall back to creating a single service entry with the total amount
-          savedBillingRows = [
-            {
-              id: '1',
-              serviceType: 'IPD Services & Treatment',
-              particulars: 'IPD Services & Treatment (Complete Bill)',
-              emergency: 'Yes',
-              doctor: '',
-              date: billingDate,
-              quantity: 1,
-              unitPrice: billAmount,
-              discount: 0,
-              taxes: 0,
-              total: billAmount
-            }
-          ];
-        }
-      }
-
-      // Find the patient from the current patients list
-      logger.log('👤 Looking for patient with ID:', bill.patient_id);
-      const patient = patients.find(p => p.id === bill.patient_id);
-
-      if (patient) {
-        setSelectedPatient(patient);
-        const patientName = `${patient.first_name} ${patient.last_name} (${patient.patient_id})`;
-        setPatientSearchTerm(patientName);
-        logger.log('✅ Patient found and set:', patientName);
-      } else {
-        logger.warn('⚠️ Patient not found in current patients list');
-        // Still proceed, but show warning
-        toast.error('Patient not found in current list, but bill will load');
-      }
-
-      // Set the billing date - use original date from bill, but allow user to change it
-      // CRITICAL FIX: Use transaction_date if available, otherwise fall back to created_at date
-      const originalBillingDate = bill.transaction_date?.split('T')[0] ||
-                                  bill.created_at?.split('T')[0] ||
-                                  getLocalDateString();
-      setBillingDate(originalBillingDate);
-      logger.log('📅 Billing date set to original (editable):', originalBillingDate);
-      logger.log('🔍 Date sources - transaction_date:', bill.transaction_date, 'created_at:', bill.created_at);
-
-      // Populate the billing rows
-      setBillingRows(savedBillingRows);
-      logger.log('📋 Billing rows populated:', savedBillingRows.length, 'rows');
-
-      // Map billing rows back to the correct state variables for calculations
-      logger.log('🔄 Mapping billing rows to state variables...');
-
-      // Create stay segments from billing rows
-      const newStaySegments = [];
-      const newSelectedServices = [];
-
-      savedBillingRows.forEach((row, index) => {
-        const serviceType = (row.serviceType || '').toLowerCase();
-        const particulars = (row.particulars || '').toLowerCase();
-
-        // Check if this is a stay/room related charge
-        if (serviceType.includes('room') || serviceType.includes('stay') || serviceType.includes('nursing') ||
-            particulars.includes('room') || particulars.includes('stay') || particulars.includes('nursing')) {
-
-          // Add to stay segments
-          const totalAmount = parseFloat(row.total) || 0;
-          const days = Math.max(1, parseInt(row.quantity) || 1);
-
-          // Calculate proper start and end dates based on the number of days
-          const startDate = row.date || billingDate;
-          const endDateObj = new Date(startDate);
-          endDateObj.setDate(endDateObj.getDate() + days);
-          const endDate = endDateObj.toISOString().split('T')[0];
-
-          // Smart room type extraction from particulars
-          const extractRoomType = (particulars: string): string => {
-            const particularsUpper = particulars.toUpperCase();
-
-            // First try to extract room type from the specific format: "ROOM_TYPE - Room Stay (X days)"
-            const roomStayMatch = particularsUpper.match(/^(.+?)\s*-\s*ROOM STAY/);
-            if (roomStayMatch) {
-              // Found the exact format, return the room type part
-              const roomType = roomStayMatch[1].trim();
-
-              // CRITICAL FIX: Normalize room types to match dropdown options exactly
-              const normalizedRoomType = roomType.toUpperCase();
-
-              // Map to exact dropdown option values
-              if (normalizedRoomType === 'ICU' || normalizedRoomType === 'INTENSIVE CARE UNIT') {
-                return 'ICU';
-              } else if (normalizedRoomType === 'CRITICAL CARE') {
-                return 'ICU';  // Map to ICU for consistency
-              } else if (normalizedRoomType === 'PRIVATE ROOM' || normalizedRoomType === 'PRIVATE') {
-                return 'Private Room';
-              } else if (normalizedRoomType === 'DELUXE ROOM' || normalizedRoomType === 'DELUXE') {
-                return 'Deluxe';
-              } else if (normalizedRoomType === 'SEMI PRIVATE' || normalizedRoomType === 'SEMI-PRIVATE') {
-                return 'Semi Private';
-              } else if (normalizedRoomType === 'GENERAL WARD' || normalizedRoomType === 'GENERAL') {
-                return 'General Ward';
-              } else {
-                // For unknown room types, use proper title case with space handling
-                return roomType.split(' ')
-                  .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-                  .join(' ');
-              }
-            }
-
-            // Fallback: Check for specific room types in the particulars text
-            if (particularsUpper.includes('ICU')) return 'ICU';
-            if (particularsUpper.includes('CRITICAL CARE')) return 'ICU';
-            if (particularsUpper.includes('INTENSIVE CARE')) return 'ICU';
-            if (particularsUpper.includes('PRIVATE ROOM') || particularsUpper.includes('PRIVATE')) return 'Private Room';
-            if (particularsUpper.includes('DELUXE')) return 'Deluxe';
-            if (particularsUpper.includes('AC ROOM') || particularsUpper.includes('A/C ROOM')) return 'AC Room';
-            if (particularsUpper.includes('NON-AC') || particularsUpper.includes('NON AC')) return 'Non-AC Room';
-            if (particularsUpper.includes('SEMI-PRIVATE') || particularsUpper.includes('SEMI PRIVATE')) return 'Semi Private';
-            if (particularsUpper.includes('GENERAL WARD')) return 'General Ward';
-            if (particularsUpper.includes('WARD')) return 'General Ward';
-
-            // Default fallback
-            return 'General Ward';
-          };
-
-          // Extract room type from the saved billing data
-          const detectedRoomType = extractRoomType(row.particulars || row.serviceType || '');
-          logger.log('🏨 Detected room type:', detectedRoomType, 'from:', row.particulars || row.serviceType);
-
-          // Try to extract original individual charges if available in saved data
-          // Look for detailed charge information in the bill description or additional fields
-          let bedChargePerDay, nursingChargePerDay, rmoChargePerDay, doctorChargePerDay;
-
-          const dailyTotal = totalAmount / days;
-
-          // COMPREHENSIVE CHARGE RECONSTRUCTION LOGIC
-          // Handle both new bills (with chargeBreakdown) and old bills (without chargeBreakdown)
-
-          if (row.chargeBreakdown) {
-            // NEW BILLS: Use saved detailed breakdown
-            bedChargePerDay = parseFloat(row.chargeBreakdown.bedChargePerDay) || 0;
-            nursingChargePerDay = parseFloat(row.chargeBreakdown.nursingChargePerDay) || 0;
-            rmoChargePerDay = parseFloat(row.chargeBreakdown.rmoChargePerDay) || 0;
-            doctorChargePerDay = parseFloat(row.chargeBreakdown.doctorChargePerDay) || 0;
-
-            logger.log('✅ Using saved chargeBreakdown for accurate reconstruction');
-          } else {
-            // OLD BILLS: Smart reconstruction based on room type and saved data
-            logger.log('⚠️ No chargeBreakdown found, using intelligent reconstruction');
-
-            const effectiveDailyRate = parseFloat(row.unitPrice) || dailyTotal;
-
-            // Enhanced room type specific charges (more realistic hospital rates)
-            const roomTypeCharges = {
-              'ICU': { bed: 3000, nursing: 800, rmo: 300, doctor: 1000 },
-              'Critical Care': { bed: 3000, nursing: 800, rmo: 300, doctor: 1000 },
-              'Private Room': { bed: 2000, nursing: 400, rmo: 200, doctor: 800 },
-              'Deluxe': { bed: 2500, nursing: 500, rmo: 250, doctor: 900 },
-              'AC Room': { bed: 1500, nursing: 300, rmo: 150, doctor: 600 },
-              'Semi Private': { bed: 1200, nursing: 250, rmo: 120, doctor: 500 },
-              'General Ward': { bed: 1000, nursing: 200, rmo: 100, doctor: 500 }
-            };
-
-            const defaultCharges = roomTypeCharges[detectedRoomType] || roomTypeCharges['General Ward'];
-
-            // If the daily rate matches or is close to our standard rates, use them
-            const standardTotal = defaultCharges.bed + defaultCharges.nursing + defaultCharges.rmo + defaultCharges.doctor;
-            const rateDifference = Math.abs(effectiveDailyRate - standardTotal);
-
-            if (rateDifference < standardTotal * 0.1) {
-              // Rate is close to standard, use predefined charges
-              bedChargePerDay = defaultCharges.bed;
-              nursingChargePerDay = defaultCharges.nursing;
-              rmoChargePerDay = defaultCharges.rmo;
-              doctorChargePerDay = defaultCharges.doctor;
-            } else {
-              // Rate is different, scale proportionally
-              const scaleFactor = effectiveDailyRate / standardTotal;
-              bedChargePerDay = Math.round(defaultCharges.bed * scaleFactor * 100) / 100;
-              nursingChargePerDay = Math.round(defaultCharges.nursing * scaleFactor * 100) / 100;
-              rmoChargePerDay = Math.round(defaultCharges.rmo * scaleFactor * 100) / 100;
-              doctorChargePerDay = Math.round(defaultCharges.doctor * scaleFactor * 100) / 100;
-            }
-
-            logger.log('📊 Reconstructed charges based on room type:', {
-              roomType: detectedRoomType,
-              effectiveDailyRate,
-              standardTotal,
-              scaleFactor: effectiveDailyRate / standardTotal,
-              charges: { bedChargePerDay, nursingChargePerDay, rmoChargePerDay, doctorChargePerDay }
-            });
-          }
-
-          const reconstructedSegment = {
-            id: row.id || `stay-${index}`,
-            roomType: detectedRoomType, // Extracted from billing data
-            startDate: startDate,
-            endDate: endDate,
-            bedChargePerDay: bedChargePerDay,
-            nursingChargePerDay: nursingChargePerDay,
-            rmoChargePerDay: rmoChargePerDay,
-            doctorChargePerDay: doctorChargePerDay
-          };
-
-          logger.log('🏗️ RECONSTRUCTED STAY SEGMENT:', reconstructedSegment);
-
-          // CRITICAL: Alert if room type is wrong
-          if (detectedRoomType === 'General Ward' && (
-            row.particulars?.toUpperCase().includes('ICU') ||
-            row.serviceType?.toUpperCase().includes('ICU')
-          )) {
-            logger.error('🚨 CRITICAL ISSUE: ICU room detected in particulars/serviceType but roomType defaulted to General Ward!');
-            logger.error('🚨 This suggests room type extraction failed!');
-            logger.error('🚨 Raw data:', { particulars: row.particulars, serviceType: row.serviceType });
-          }
-
-          newStaySegments.push(reconstructedSegment);
-
-          logger.log('🏨 ✅ SUCCESSFULLY CREATED STAY SEGMENT:', reconstructedSegment);
-          logger.log('🏨 📋 Segment details:', {
-            roomType: reconstructedSegment.roomType,
-            bedChargePerDay: reconstructedSegment.bedChargePerDay,
-            nursingChargePerDay: reconstructedSegment.nursingChargePerDay,
-            rmoChargePerDay: reconstructedSegment.rmoChargePerDay,
-            doctorChargePerDay: reconstructedSegment.doctorChargePerDay
-          });
-
-        } else {
-          // Add to selected services
-          const serviceQuantity = parseInt(row.quantity) || 1;
-          const serviceUnitPrice = parseFloat(row.unitPrice) || (parseFloat(row.total) || 0) / serviceQuantity;
-
-          newSelectedServices.push({
-            id: row.id || `service-${index}`,
-            name: row.serviceType || row.particulars || 'Medical Service',
-            selected: true,
-            quantity: serviceQuantity,
-            amount: serviceUnitPrice
-          });
-
-          logger.log('🩺 Mapped to service:', {
-            name: row.serviceType || row.particulars,
-            quantity: serviceQuantity,
-            unitPrice: serviceUnitPrice,
-            total: row.total
-          });
-        }
-      });
-
-      // CRITICAL FIX: Use functional update to ensure state integrity
-      logger.log('🔄 ABOUT TO SET STAY SEGMENTS WITH FUNCTIONAL UPDATE:', newStaySegments);
-
-      setStaySegments((prevSegments) => {
-        logger.log('🔄 FUNCTIONAL UPDATE: Previous segments:', prevSegments);
-        logger.log('🔄 FUNCTIONAL UPDATE: New segments:', newStaySegments);
-
-        // AGGRESSIVE PROTECTION: Create backup and activate protection
-        correctStateBackupRef.current = [...newStaySegments];
-        stateProtectionActiveRef.current = true;
-        logger.log('🛡️ STATE PROTECTION ACTIVATED: Backup created');
-        logger.log('🛡️ Backup contains:', newStaySegments.map((s, i) => `${s.roomType} - ₹${s.bedChargePerDay}`));
-
-        // Start periodic state monitoring
-        const protectionInterval = setInterval(() => {
-          if (!stateProtectionActiveRef.current) {
-            clearInterval(protectionInterval);
-            return;
-          }
-
-          // Check if state got corrupted and restore immediately
-          if (staySegments.length > 0 && correctStateBackupRef.current) {
-            const currentFirst = staySegments[0];
-            const backupFirst = correctStateBackupRef.current[0];
-
-            if (currentFirst.roomType === 'General Ward' && currentFirst.bedChargePerDay === 1000 &&
-                backupFirst.roomType !== 'General Ward' && backupFirst.bedChargePerDay !== 1000) {
-              logger.log('🚨 PERIODIC CHECK: State corruption detected, restoring immediately!');
-              _setStaySegments([...correctStateBackupRef.current]);
-            }
-          }
-        }, 100); // Check every 100ms
-
-        return newStaySegments;
-      });
-
-      setSelectedServices(newSelectedServices);
-
-      logger.log('✅ State mapping completed:');
-      logger.log('   - Stay segments:', newStaySegments.length);
-      logger.log('   - Selected services:', newSelectedServices.length);
-
-      // CRITICAL: Set a flag to prevent other state updates
-      const preserveStateTimer = setTimeout(() => {
-        logger.log('🔒 State preservation period ended');
-      }, 1000);
-
-      // CRITICAL: Multiple verifications to catch when state gets overridden
-      setTimeout(() => {
-        logger.log('🔍 VERIFICATION 1 (50ms): Stay segments after setState:', JSON.stringify(staySegments, null, 2));
-      }, 50);
-
-      setTimeout(() => {
-        logger.log('🔍 VERIFICATION 2 (200ms): Stay segments after setState:', JSON.stringify(staySegments, null, 2));
-      }, 200);
-
-      setTimeout(() => {
-        logger.log('🔍 VERIFICATION 3 (500ms): Stay segments after setState:', JSON.stringify(staySegments, null, 2));
-      }, 500);
-
-      // Populate other bill details for editing using exact extracted values
-      const totalAmount = bill.amount || 0;
-      const descriptionText = bill.description || '';
-
-      // Extract payment mode from the bill data
-      const paymentMode = bill.payment_mode || 'CASH';
-      setFinalPaymentMode(paymentMode);
-      logger.log('💳 Payment mode set to:', paymentMode);
-
-      // Set ward category from description if available, otherwise default
-      if (descriptionText.includes('ICU')) {
-        setWardCategory('ICU');
-      } else if (descriptionText.includes('DELUXE')) {
-        setWardCategory('Deluxe');
-      } else if (descriptionText.includes('PRIVATE')) {
-        setWardCategory('Private');
-      } else {
-        setWardCategory('Emergency'); // Default
-      }
-      logger.log('🏥 Ward category set from description');
-
-      // Extract exact values from bill description (same extraction as billing rows)
-      const admissionMatch = descriptionText.match(/Admission:\s*₹(\d+(?:\.\d{2})?)/);
-      const discountMatch = descriptionText.match(/Discount:\s*₹(\d+(?:\.\d{2})?)/);
-      const taxMatch = descriptionText.match(/Tax:\s*₹(\d+(?:\.\d{2})?)/);
-
-      // Check if this is a comprehensive bill to handle admission fee correctly
-      const billingRowsTotal = savedBillingRows.reduce((sum, row) => sum + (parseFloat(row.total) || 0), 0);
-      const isComprehensiveBill = savedBillingRows.length === 1 && Math.abs(billingRowsTotal - (totalAmount || 0)) < 1;
-
-      // Set exact admission fee from description
-      if (isComprehensiveBill) {
-        logger.log('🔍 COMPREHENSIVE BILL - Setting admission fee to 0 (total is in service)');
-        setAdmissionFee(0);
-      } else if (admissionMatch) {
-        const extractedAdmissionFee = parseFloat(admissionMatch[1]) || 0;
-        setAdmissionFee(extractedAdmissionFee);
-        logger.log('🏨 Admission fee extracted exactly:', extractedAdmissionFee);
-      } else {
-        // Calculate admission fee to balance the total
-        // Total = Admission + Stay + Services - Discount + Tax
-        // So Admission = Total - Stay - Services + Discount - Tax
-        const stayTotal = savedBillingRows.reduce((sum, row) => sum + (parseFloat(row.total) || 0), 0);
-        const extractedDiscount = discountMatch ? (parseFloat(discountMatch[1]) || 0) : 0;
-        const extractedTax = taxMatch ? (parseFloat(taxMatch[1]) || 0) : 0;
-
-        const calculatedAdmission = Math.max(0, (totalAmount || 0) - stayTotal + extractedDiscount - extractedTax);
-        setAdmissionFee(calculatedAdmission);
-        logger.log('🏨 Admission fee calculated to balance total:', calculatedAdmission);
-        logger.log('🔍 CALCULATION BREAKDOWN:');
-        logger.log('   - Total amount:', totalAmount);
-        logger.log('   - Stay/Services total:', stayTotal);
-        logger.log('   - Extracted discount:', extractedDiscount);
-        logger.log('   - Extracted tax:', extractedTax);
-        logger.log('   - Formula: ', totalAmount, '-', stayTotal, '+', extractedDiscount, '-', extractedTax, '=', calculatedAdmission);
-      }
-
-      // Set exact discount from description
-      if (discountMatch) {
-        const extractedDiscount = parseFloat(discountMatch[1]) || 0;
-        setDiscount(extractedDiscount);
-        logger.log('💸 Discount extracted exactly:', extractedDiscount);
-      } else {
-        setDiscount(0);
-        logger.log('💸 No discount found in description, set to 0');
-      }
-
-      // Set exact tax from description
-      if (taxMatch) {
-        const extractedTax = parseFloat(taxMatch[1]) || 0;
-        setTax(extractedTax);
-        logger.log('📊 Tax extracted exactly:', extractedTax);
-      } else {
-        setTax(0);
-        logger.log('📊 No tax found in description, set to 0');
-      }
-
-      logger.log('💰 Bill total amount:', totalAmount, '(exact values extracted for editing)');
-
-      // Set the editing state
-      setEditingBill(bill);
-      logger.log('✏️ Editing state set');
-
-      // Open the create/edit form
-      setShowCreateBill(true);
-      logger.log('📝 Form opened for editing');
-
-      // CRITICAL: Clear editing flag after a delay to allow state to settle
-      setTimeout(() => {
-        isEditingRef.current = false;
-        stateProtectionActiveRef.current = false;
-        logger.log('🔓 EDITING REF SET TO FALSE - State should now be stable');
-        logger.log('🛡️ STATE PROTECTION DEACTIVATED');
-      }, 2000);
-
-      // Final summary of what was set
-      logger.log('🎯 FINAL EDIT STATE SUMMARY:');
-      logger.log('   - Original bill amount:', bill.amount);
-      logger.log('   - Billing rows loaded:', savedBillingRows.length);
-      logger.log('   - Current admission fee state will be:', admissionMatch ? parseFloat(admissionMatch[1]) : 'calculated');
-      logger.log('   - Current discount state will be:', discountMatch ? parseFloat(discountMatch[1]) : 0);
-      logger.log('   - Current tax state will be:', taxMatch ? parseFloat(taxMatch[1]) : 0);
-      logger.log('   - Expected total calculation will be: admission + services - discount + tax');
-
-      toast.success('Bill loaded for editing successfully!');
-
-    } catch (error) {
-      logger.error('❌ Detailed error in handleEditBill:', error);
-      logger.error('❌ Error stack:', error.stack);
-      toast.error(`Failed to load bill for editing: ${error.message}`);
-
-      // Even if there's an error, try to open the form with basic data
-      try {
-        setEditingBill(bill);
-        // Set the original billing date, but user can change it via the date input field
-        setBillingDate(bill.transaction_date?.split('T')[0] || bill.created_at?.split('T')[0] || getLocalDateString());
-        // Note: Total will be calculated dynamically from billing rows
-        setShowCreateBill(true);
-        toast.error('Bill loaded with limited data due to parsing error');
-      } catch (fallbackError) {
-        logger.error('❌ Even fallback failed:', fallbackError);
-      }
-    }
-  };
-
-
-  // Handler for Print Bill button with exact ReceiptTemplate format
-  const handlePrintBill = async (bill: any) => {
-
-    logger.log('🚨🚨🚨 PRINT BILL FUNCTION CALLED 🚨🚨🚨');
-    logger.log('🚨 RAW BILL OBJECT:', bill);
-
-    // 🔍 ENHANCEMENT: Fetch discharge date if patient has been discharged
-    if (bill.patients?.id && bill.patients?.ipd_status === 'DISCHARGED') {
-      try {
-        // Try to get discharge date from patient_admissions table
-        const { data: admissionData, error: admissionError } = await supabase
-          .from('patient_admissions')
-          .select('discharge_date, updated_at, status')
-          .eq('patient_id', bill.patients.id)
-          .eq('status', 'DISCHARGED')
-          .order('updated_at', { ascending: false })
-          .limit(1)
-          .single();
-
-        if (!admissionError && admissionData?.discharge_date) {
-          bill.patients.discharge_date = admissionData.discharge_date;
-          logger.log('✅ Fetched discharge date from admissions:', admissionData.discharge_date);
-        } else if (!admissionError && admissionData?.updated_at) {
-          // Use updated_at as fallback
-          bill.patients.discharge_date = admissionData.updated_at;
-          logger.log('✅ Using admission updated_at as discharge date:', admissionData.updated_at);
-        }
-
-        // Also try to get from discharge_summaries table as alternative
-        if (!bill.patients.discharge_date) {
-          const { data: dischargeSummary, error: summaryError } = await supabase
-            .from('discharge_summaries')
-            .select('created_at, discharge_date')
-            .eq('patient_id', bill.patients.id)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .single();
-
-          if (!summaryError && dischargeSummary) {
-            bill.patients.discharge_date = dischargeSummary.discharge_date || dischargeSummary.created_at;
-            logger.log('✅ Fetched discharge date from discharge_summaries:', bill.patients.discharge_date);
-          }
-        }
-      } catch (error) {
-        logger.error('❌ Error fetching discharge date:', error);
-      }
-    }
-
-    // 🔧 Helper function to format dates without timezone issues
-    const formatLocalDate = (dateStr: string | undefined | null): string => {
-      if (!dateStr) return 'N/A';
-      try {
-        // If date string is in ISO format (YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss),
-        // split it to avoid timezone conversion issues
-        const dateOnly = dateStr.split('T')[0];
-        if (dateOnly.includes('-')) {
-          const [year, month, day] = dateOnly.split('-');
-          return `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}`;
-        }
-        // Fallback for other formats
-        return new Date(dateStr).toLocaleDateString('en-IN');
-      } catch (error) {
-        logger.error('❌ Error formatting date:', error);
-        return 'N/A';
-      }
-    };
-
-    // 🔍 ENHANCEMENT: Fetch ipd_number if missing from patient admissions
-    if (bill.patients?.id && (!bill.patients?.ipd_number || bill.patients?.ipd_number === 'N/A')) {
-      try {
-        const { data: admissionData, error: admissionError } = await supabase
-          .from('patient_admissions')
-          .select('ipd_number')
-          .eq('patient_id', bill.patients.id)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
-
-        if (!admissionError && admissionData?.ipd_number) {
-          bill.patients.ipd_number = admissionData.ipd_number;
-          logger.log('✅ Fetched ipd_number from patient_admissions:', admissionData.ipd_number);
-        } else {
-          // Fallback: try to get ipd_number from patients table directly
-          const { data: patientData, error: patientError } = await supabase
-            .from('patients')
-            .select('ipd_number')
-            .eq('id', bill.patients.id)
-            .single();
-
-          if (!patientError && patientData?.ipd_number) {
-            bill.patients.ipd_number = patientData.ipd_number;
-            logger.log('✅ Fetched ipd_number from patients table:', patientData.ipd_number);
-          }
-        }
-      } catch (error) {
-        logger.error('❌ Error fetching ipd_number:', error);
-      }
-    }
-
-    // 🔍 DEBUG: Check patient data available for printing
-    logger.log('🖨️ PRINT BILL DEBUG - Patient data available:', {
-      'Bill ID': bill.id,
-      'Patient object exists?': !!bill.patients,
-      'Patient name': bill.patients ? `${bill.patients.first_name} ${bill.patients.last_name}` : 'N/A',
-      'Patient age': bill.patients?.age || 'MISSING',
-      'Patient gender': bill.patients?.gender || 'MISSING',
-      'Assigned doctor': bill.patients?.assigned_doctor || 'MISSING',
-      'Doctor name': bill.patients?.doctor_name || 'MISSING',
-      'IPD bed number': bill.patients?.ipd_bed_number || 'MISSING',
-      'Direct admission date': bill.patients?.admission_date || 'MISSING',
-      'Direct discharge date': bill.patients?.discharge_date || 'MISSING',
-      'Direct room type': bill.patients?.room_type || 'MISSING',
-      'IPD number': bill.patients?.ipd_number || 'MISSING',
-      'IPD Status': bill.patients?.ipd_status || 'MISSING',
-      'Admissions array exists?': !!bill.patients?.admissions,
-      'Admissions length': bill.patients?.admissions?.length || 0,
-      'First admission data': bill.patients?.admissions?.[0],
-      'Full patient object': bill.patients
-    });
-
-    // Check if we can extract services from description directly
-    if (bill.description?.includes('BILLING_ROWS:')) {
-      const match = bill.description.match(/BILLING_ROWS:\s*(\[[\s\S]*?\])/);
-      if (match) {
-        logger.log('🔍 Raw BILLING_ROWS in description:');
-        logger.log(match[1].substring(0, 500) + '...');
-      }
-    }
-    // Create a temporary canvas to load and convert the image to base64
-    const convertImageToBase64 = () => {
-      return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
-          canvas.width = img.width;
-          canvas.height = img.height;
-          ctx?.drawImage(img, 0, 0);
-          const dataURL = canvas.toDataURL('image/png');
-          resolve(dataURL);
-        };
-        img.onerror = () => reject('Failed to load image');
-        img.src = '/Receipt2.png';
-      });
-    };
-
-    // Use actual billing rows data for services breakdown
-    const printServices = [];
-
-    // Check if this is a deposit transaction
-    const isDepositTransaction = ['ADMISSION_FEE', 'DEPOSIT', 'ADVANCE_PAYMENT'].includes(bill.transaction_type);
-
-    // Extract the exact services data from the saved bill
-    let billRows = [];
-
-    logger.log('🔍 Extracting services from saved bill data...');
-    logger.log('🔍 Bill description preview:', bill.description?.substring(0, 300));
-
-    // Parse BILLING_ROWS from description
-    if (bill.description && bill.description.includes('BILLING_ROWS:')) {
-      try {
-        // Multiple regex patterns to extract BILLING_ROWS
-        let billingRowsMatch = bill.description.match(/BILLING_ROWS:\s*(\[[\s\S]*?\])(?:\s*$|$)/);
-        if (!billingRowsMatch) {
-          billingRowsMatch = bill.description.match(/BILLING_ROWS:\s*(\[[\s\S]*)/);
-          if (billingRowsMatch) {
-            let rawJson = billingRowsMatch[1];
-            const lastBracket = rawJson.lastIndexOf(']');
-            if (lastBracket !== -1) {
-              rawJson = rawJson.substring(0, lastBracket + 1);
-            }
-            billingRowsMatch[1] = rawJson;
-          }
-        }
-
-        if (billingRowsMatch) {
-          billRows = JSON.parse(billingRowsMatch[1]);
-        }
-      } catch (error) {
-        logger.error('❌ Failed to parse BILLING_ROWS:', error);
-      }
-    }
-
-    // If no billing rows found, try to extract basic amounts from description
-    if (billRows.length === 0) {
-      const descriptionText = bill.description || '';
-      const admissionMatch = descriptionText.match(/Admission:\s*₹(\d+(?:\.\d{2})?)/);
-      const stayMatch = descriptionText.match(/Stay:\s*₹(\d+(?:\.\d{2})?)/);
-
-      if (admissionMatch && parseFloat(admissionMatch[1]) > 0) {
-        billRows.push({
-          serviceType: 'Admission Fee',
-          particulars: 'Hospital Admission Charges',
-          quantity: 1,
-          unitPrice: parseFloat(admissionMatch[1]),
-          total: parseFloat(admissionMatch[1])
-        });
-      }
-
-      if (stayMatch && parseFloat(stayMatch[1]) > 0) {
-        billRows.push({
-          serviceType: 'Room & Stay Charges',
-          particulars: 'Room & Stay Charges',
-          quantity: 1,
-          unitPrice: parseFloat(stayMatch[1]),
-          total: parseFloat(stayMatch[1])
-        });
-      }
-    }
-
-    // Handle deposit transactions differently - override services display
-    if (isDepositTransaction) {
-      const paymentMode = bill.payment_mode || 'CASH';
-      printServices.push({
-        sr: 1,
-        service: `Advance Payment (${paymentMode})`,
-        qty: 1,
-        rate: bill.amount || 0,
-        amount: bill.amount || 0
-      });
-    }
-    // Process all individual services from BILLING_ROWS for non-deposit transactions
-    else if (billRows && billRows.length > 0) {
-      billRows.forEach((row, index) => {
-        const serviceName = row.particulars || row.serviceType || `Service ${index + 1}`;
-        const quantity = parseInt(row.quantity) || 1;
-        const unitPrice = parseFloat(row.unitPrice) || 0;
-        const total = parseFloat(row.total) || (quantity * unitPrice);
-
-        // Special handling for grouped "Medical Services & Treatment"
-        if ((serviceName === 'Medical Services & Treatment' ||
-             serviceName.includes('Medical Services')) && total === 1500) {
-
-          // Look for actual individual services in the BILLING_ROWS
-          const actualIndividualServices = billRows.filter(billRow => {
-            const rowService = (billRow.serviceType || billRow.particulars || '').toLowerCase();
-            const isNotGrouped = !rowService.includes('medical services') &&
-                                !rowService.includes('admission') &&
-                                !rowService.includes('room') &&
-                                !rowService.includes('stay');
-            const hasAmount = billRow.total > 0;
-            return isNotGrouped && hasAmount;
-          });
-
-          if (actualIndividualServices.length > 0) {
-            actualIndividualServices.forEach((service, serviceIndex) => {
-              printServices.push({
-                sr: printServices.length + 1,
-                service: service.particulars || service.serviceType,
-                qty: service.quantity || 1,
-                rate: service.unitPrice || service.total,
-                amount: service.total
-              });
-            });
-          } else {
-            // Keep as grouped service since we don't have real data
-            printServices.push({
-              sr: printServices.length + 1,
-              service: serviceName,
-              qty: quantity,
-              rate: unitPrice,
-              amount: total
-            });
-          }
-
-        } else {
-          // Regular service processing
-          if (total > 0 || unitPrice > 0) {
-            printServices.push({
-              sr: printServices.length + 1,
-              service: serviceName,
-              qty: quantity,
-              rate: unitPrice,
-              amount: total
-            });
-          }
-        }
-      });
-    } else if (!isDepositTransaction) {
-      // Fallback: Try to extract basic amounts from description (only for non-deposit transactions)
-      const descriptionText = bill.description || '';
-      let serviceIndex = 1;
-
-      const admissionMatch = descriptionText.match(/Admission:\s*₹(\d+(?:\.\d{2})?)/);
-      const stayMatch = descriptionText.match(/Stay:\s*₹(\d+(?:\.\d{2})?)/);
-      const servicesMatch = descriptionText.match(/Services:\s*₹(\d+(?:\.\d{2})?)/);
-
-      if (admissionMatch && parseFloat(admissionMatch[1]) > 0) {
-        printServices.push({
-          sr: serviceIndex++,
-          service: 'Hospital Admission Charges',
-          qty: 1,
-          rate: parseFloat(admissionMatch[1]),
-          amount: parseFloat(admissionMatch[1])
-        });
-      }
-
-      if (stayMatch && parseFloat(stayMatch[1]) > 0) {
-        printServices.push({
-          sr: serviceIndex++,
-          service: 'Room & Stay Charges',
-          qty: 1,
-          rate: parseFloat(stayMatch[1]),
-          amount: parseFloat(stayMatch[1])
-        });
-      }
-
-      if (servicesMatch && parseFloat(servicesMatch[1]) > 0) {
-        printServices.push({
-          sr: serviceIndex++,
-          service: 'Medical Services (Details Not Available)',
-          qty: 1,
-          rate: parseFloat(servicesMatch[1]),
-          amount: parseFloat(servicesMatch[1])
-        });
-      }
-    }
-
-    // Calculate correct totals from printServices, not from bill.amount
-    const servicesTotal = printServices.reduce((sum, service) => sum + (parseFloat(service.amount) || 0), 0);
-
-    // Convert image and create print window
-    convertImageToBase64().then((base64Image) => {
-      createPrintWindow(base64Image as string);
-    }).catch((error) => {
-      logger.error('Failed to load Receipt.png:', error);
-      // Create print window without background image
-      createPrintWindow('');
-    });
-
-    const createPrintWindow = (backgroundImage: string) => {
-      const printWindow = window.open('', '_blank');
-      if (!printWindow) {
-        toast.error('Unable to open print window');
-        return;
-      }
-    
-    // Function to convert number to words
-    const convertToWords = (num) => {
-      if (num === 0) return 'Zero Rupees Only';
-      
-      const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
-      const teens = ['Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
-      const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
-      
-      const convertHundreds = (n) => {
-        let result = '';
-        if (n >= 100) {
-          result += ones[Math.floor(n / 100)] + ' Hundred ';
-          n %= 100;
-        }
-        if (n >= 20) {
-          result += tens[Math.floor(n / 10)] + ' ';
-          n %= 10;
-        } else if (n >= 10) {
-          result += teens[n - 10] + ' ';
-          return result;
-        }
-        if (n > 0) {
-          result += ones[n] + ' ';
-        }
-        return result;
-      };
-      
-      let result = '';
-      const crores = Math.floor(num / 10000000);
-      if (crores > 0) {
-        result += convertHundreds(crores) + 'Crore ';
-        num %= 10000000;
-      }
-      
-      const lakhs = Math.floor(num / 100000);
-      if (lakhs > 0) {
-        result += convertHundreds(lakhs) + 'Lakh ';
-        num %= 100000;
-      }
-      
-      const thousands = Math.floor(num / 1000);
-      if (thousands > 0) {
-        result += convertHundreds(thousands) + 'Thousand ';
-        num %= 1000;
-      }
-      
-      if (num > 0) {
-        result += convertHundreds(num);
-      }
-      
-      return result.trim() + ' Rupees Only';
-    };
-
-    const getCurrentTime = () => {
-      return new Date().toLocaleTimeString('en-IN', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true,
-        timeZone: 'Asia/Kolkata'
-      });
-    };
-
-    // Extract actual discount and tax from bill description
-    const descriptionText = bill.description || '';
-    const discountMatch = descriptionText.match(/Discount:\s*₹(\d+(?:\.\d{2})?)/);
-    const taxMatch = descriptionText.match(/Tax:\s*₹(\d+(?:\.\d{2})?)/);
-    const netMatch = descriptionText.match(/Net:\s*₹(\d+(?:\.\d{2})?)/);
-
-    const actualDiscount = discountMatch ? parseFloat(discountMatch[1]) : 0;
-    const actualTax = taxMatch ? parseFloat(taxMatch[1]) : 0;
-    const actualNetAmount = netMatch ? parseFloat(netMatch[1]) : bill.amount;
-
-    // Calculate totals based on actual printServices and charges from bill
-    const calculatedServicesTotal = printServices.reduce((sum, service) => sum + (parseFloat(service.amount) || 0), 0);
-
-    const totals = {
-      subtotal: calculatedServicesTotal,
-      discount: actualDiscount,
-      insurance: 0,
-      netAmount: actualNetAmount || calculatedServicesTotal,
-      amountPaid: actualNetAmount || calculatedServicesTotal,
-      balance: 0
-    };
-
-    // Paginate services - 13 entries per page
-    const SERVICES_PER_PAGE = 13;
-    const servicePages: typeof printServices[] = [];
-    for (let i = 0; i < printServices.length; i += SERVICES_PER_PAGE) {
-      servicePages.push(printServices.slice(i, i + SERVICES_PER_PAGE));
-    }
-
-    // Generate individual page HTML
-    const generateServicePage = (services: typeof printServices, pageIndex: number, isLastPage: boolean) => {
-      const startSr = pageIndex * SERVICES_PER_PAGE + 1;
-
-      return `
-        <div class="receipt-template" style="
-          width: 297mm;
-          height: 420mm;
-          padding: 0 !important;
-          margin: 0 !important;
-          border: none !important;
-          position: relative;
-        ">
-
-          <!-- Background Image - positioned absolutely -->
-          ${backgroundImage ? `<img src="${backgroundImage}" style="
-            position: absolute;
-            top: 0;
-            left: -10mm;
-            width: 317mm;
-            height: 420mm;
-            z-index: 0;
-            opacity: 1;
-            object-fit: stretch;
-          " />` : ''}
-
-          <!-- Content starts after header -->
-          <div style="margin-top: 0; padding: 300px 30px 0 30px; position: relative; z-index: 2;">
-
-          ${pageIndex === 0 ? `
-            <!-- IPD BILL/DEPOSIT Title at Top Center (only on first page) -->
-            <div style="text-align: center; margin-bottom: 25px;">
-              <h1 style="font-size: 28px; font-weight: bold; color: black; margin: 0; letter-spacing: 2px;">${isDepositTransaction ? 'IPD DEPOSIT' : 'IPD BILL'}</h1>
-            </div>
-
-            <!-- Header Information (only on first page) -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; margin-bottom: 25px; font-size: 16px; color: black;">
-              <div>
-                <p style="margin: 5px 0;"><strong>DATE:</strong> ${new Date().toLocaleDateString('en-IN')}</p>
-                <p style="margin: 5px 0;"><strong>TIME:</strong> ${getCurrentTime()}</p>
-              </div>
-              <div style="text-align: right;">
-                <p style="margin: 5px 0;"><strong>PAYMENT MODE:</strong> ${bill.payment_mode || 'UPI'}</p>
-              </div>
-            </div>
-
-            <!-- Patient Information Section (only on first page) -->
-            <div style="margin-bottom: 30px;">
-              <h3 style="
-                font-weight: bold;
-                margin-bottom: 15px;
-                color: black;
-                font-size: 18px;
-                text-decoration: underline;
-              ">Patient & IPD Information</h3>
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; font-size: 16px;">
-                <div>
-                  <p style="color: black; margin: 6px 0;"><strong>BILL NO.:</strong> ${bill.transaction_reference || bill.id}</p>
-                  <p style="color: black; margin: 6px 0;"><strong>BILL DATE:</strong> ${formatLocalDate(bill.transaction_date || bill.created_at)}</p>
-                  <p style="color: black; margin: 6px 0;"><strong>PATIENT ID:</strong> ${bill.patients?.patient_id || 'N/A'}</p>
-                  <p style="color: black; margin: 6px 0;"><strong>PATIENT NAME:</strong> ${bill.patients?.first_name || ''} ${bill.patients?.last_name || ''}</p>
-                  <p style="color: black; margin: 6px 0;"><strong>AGE/SEX:</strong> ${bill.patients?.age || 'N/A'} years / ${bill.patients?.gender || 'N/A'}</p>
-                  <p style="color: black; margin: 6px 0;"><strong>MOBILE:</strong> ${bill.patients?.phone || 'N/A'}</p>
-                </div>
-                <div>
-                  <p style="color: black; margin: 6px 0;"><strong>DR NAME:</strong> ${bill.patients?.assigned_doctor || bill.patients?.doctor_name || bill.doctor_name || 'N/A'}</p>
-                  <p style="color: black; margin: 6px 0;"><strong>IPD NO.:</strong> ${bill.patients?.ipd_number || 'N/A'}</p>
-                  <p style="color: black; margin: 6px 0;"><strong>ADMISSION DATE:</strong> ${formatLocalDate(bill.patients?.admission_date || (bill.patients?.admissions && bill.patients.admissions[0]?.admission_date))}</p>
-                  <p style="color: black; margin: 6px 0;"><strong>DISCHARGE DATE:</strong> ${formatLocalDate(bill.patients?.discharge_date || (bill.patients?.admissions && bill.patients.admissions[0]?.discharge_date)) || 'Not Discharged'}</p>
-                  <p style="color: black; margin: 6px 0;"><strong>ROOM TYPE:</strong> ${bill.patients?.room_type || (bill.patients?.admissions && bill.patients.admissions[0]?.room_type) || 'N/A'}</p>
-                  <p style="color: black; margin: 6px 0;"><strong>BED NO.:</strong> ${bill.patients?.ipd_bed_number || bill.patients?.bed_number || 'N/A'}</p>
-                </div>
-              </div>
-            </div>
-          ` : `
-            <!-- Continuation header for subsequent pages -->
-            <div style="margin-bottom: 25px;">
-              <h3 style="
-                font-weight: bold;
-                color: black;
-                font-size: 18px;
-                text-align: center;
-              ">Bill Continued - Page ${pageIndex + 1}</h3>
-              <p style="text-align: center; color: black; margin: 10px 0;">
-                <strong>BILL NO.:</strong> ${bill.transaction_reference || bill.id} |
-                <strong>PATIENT:</strong> ${bill.patients?.first_name || ''} ${bill.patients?.last_name || ''}
-              </p>
-            </div>
-          `}
-
-          <!-- Services & Charges Section -->
-          <div style="margin-bottom: 25px;">
-            <h3 style="
-              font-weight: bold;
-              margin-bottom: 15px;
-              color: black;
-              font-size: 18px;
-              text-decoration: underline;
-            ">Services & Charges ${pageIndex > 0 ? '(Continued)' : ''}</h3>
-            <table style="width: 100%; border-collapse: collapse; border: 1px solid black;">
-              <thead>
-                <tr style="background-color: #f5f5f5;">
-                  <th style="border: 1px solid black; padding: 12px; text-align: center; color: black; font-weight: bold; font-size: 16px;">Sr</th>
-                  <th style="border: 1px solid black; padding: 12px; text-align: left; color: black; font-weight: bold; font-size: 16px;">Service</th>
-                  <th style="border: 1px solid black; padding: 12px; text-align: center; color: black; font-weight: bold; font-size: 16px;">Qty</th>
-                  <th style="border: 1px solid black; padding: 12px; text-align: center; color: black; font-weight: bold; font-size: 16px;">Rate (₹)</th>
-                  <th style="border: 1px solid black; padding: 12px; text-align: center; color: black; font-weight: bold; font-size: 16px;">Discount</th>
-                  <th style="border: 1px solid black; padding: 12px; text-align: center; color: black; font-weight: bold; font-size: 16px;">Amount (₹)</th>
-                  <th style="border: 1px solid black; padding: 12px; text-align: center; color: black; font-weight: bold; font-size: 16px;">Payment Mode</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${services.map((service, index) => `
-                  <tr>
-                    <td style="border: 1px solid black; padding: 10px; text-align: center; color: black; font-size: 14px;">${startSr + index}</td>
-                    <td style="border: 1px solid black; padding: 10px; color: black; font-size: 14px;">${service.service}</td>
-                    <td style="border: 1px solid black; padding: 10px; text-align: center; color: black; font-size: 14px;">${service.qty}</td>
-                    <td style="border: 1px solid black; padding: 10px; text-align: center; color: black; font-size: 14px;">₹${service.rate.toFixed(2)}</td>
-                    <td style="border: 1px solid black; padding: 10px; text-align: center; color: black; font-size: 14px;">-</td>
-                    <td style="border: 1px solid black; padding: 10px; text-align: center; color: black; font-size: 14px;">₹${service.amount.toFixed(2)}</td>
-                    <td style="border: 1px solid black; padding: 10px; text-align: center; color: black; font-size: 14px;">${bill.payment_mode || 'UPI'}</td>
-                  </tr>
-                `).join('')}
-                ${isLastPage ? `
-                  <!-- Net Amount Paid Row (only on last page) -->
-                  <tr style="background-color: #f0f0f0;">
-                    <td colspan="7" style="border: 1px solid black; padding: 15px; text-align: center; color: black; font-weight: bold; font-size: 18px;">
-                      Net Amount Paid: ₹${totals.netAmount.toFixed(2)}
-                    </td>
-                  </tr>
-                ` : ''}
-              </tbody>
-            </table>
-            ${!isLastPage ? `
-              <p style="text-align: right; margin-top: 10px; font-style: italic; color: black;">
-                Continued on next page...
-              </p>
-            ` : ''}
-          </div>
-
-          ${isLastPage ? `
-            <!-- Amount in Words (only on last page) -->
-            <div style="text-align: center; margin-bottom: 25px; padding: 15px; background-color: #f9f9f9; border: 1px solid #ddd;">
-              <p style="font-size: 16px; color: black; margin: 0;"><strong>Amount in Words:</strong> ${convertToWords(totals.netAmount)}</p>
-            </div>
-
-            <!-- Signature Section (only on last page) -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 40px; margin-bottom: 30px;">
-              <div style="text-align: center; border-top: 2px solid black; padding-top: 8px;">
-                <p style="font-size: 14px; color: black; margin: 0;">Patient/Guardian Signature</p>
-              </div>
-              <div style="text-align: center; border-top: 2px solid black; padding-top: 8px;">
-                <p style="font-size: 14px; color: black; margin: 0;">Authorized Signature</p>
-                <p style="font-size: 12px; color: black; margin: 4px 0 0 0;">Hospital Administrator</p>
-              </div>
-            </div>
-
-            <!-- Footer (only on last page) -->
-            <div style="text-align: center; margin-top: 25px;">
-            </div>
-          ` : `
-            <!-- Page indicator -->
-            <div style="text-align: center; margin-top: 20px;">
-              <p style="font-size: 12px; color: #666;">Page ${pageIndex + 1} of ${servicePages.length}</p>
-            </div>
-          `}
-
-          </div>
-        </div>
-      `;
-    };
-
-    const billHTML = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>IPD Bill - ${bill.transaction_reference || bill.id}</title>
-          <style>
-            @page {
-              margin: 0 !important;
-              padding: 0 !important;
-              border: none !important;
-              size: A3 portrait;
-              width: 297mm;
-              height: 420mm;
-            }
-
-            @media print {
-              body {
-                margin: 0 !important;
-                padding: 0 !important;
-                border: none !important;
-                width: 297mm;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-                color-adjust: exact !important;
-              }
-              html {
-                margin: 0 !important;
-                padding: 0 !important;
-                border: none !important;
-              }
-              .receipt-template {
-                width: 297mm !important;
-                height: 420mm !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                border: none !important;
-                page-break-after: always !important;
-                break-after: page !important;
-                page-break-inside: avoid !important;
-                break-inside: avoid !important;
-                position: relative !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-                color-adjust: exact !important;
-              }
-              .receipt-template:last-child {
-                page-break-after: auto !important;
-                break-after: auto !important;
-              }
-              .receipt-template img {
-                display: block !important;
-                visibility: visible !important;
-                opacity: 1 !important;
-                width: 297mm !important;
-                height: 420mm !important;
-                position: absolute !important;
-                top: 0 !important;
-                left: 0 !important;
-                z-index: 0 !important;
-                object-fit: stretch !important;
-              }
-              .print\\:hidden {
-                display: none !important;
-              }
-              .receipt-template p, 
-              .receipt-template span, 
-              .receipt-template div, 
-              .receipt-template h1, 
-              .receipt-template h2, 
-              .receipt-template h3, 
-              .receipt-template h4,
-              .receipt-template table, 
-              .receipt-template td, 
-              .receipt-template th {
-                color: black !important;
-                border-color: #333 !important;
-              }
-              .receipt-template table, 
-              .receipt-template th, 
-              .receipt-template td {
-                border: 1px solid black !important;
-              }
-              .receipt-template .text-right {
-                text-align: right !important;
-              }
-              .receipt-template p,
-              .receipt-template strong {
-                color: black !important;
-              }
-              .receipt-template * {
-                color: black !important;
-              }
-              /* Force background colors and images to print */
-              * {
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-                color-adjust: exact !important;
-              }
-              /* Ensure background images are not filtered out */
-              @media print {
-                body {
-                  background-attachment: scroll !important;
-                }
-                .receipt-template {
-                  background-attachment: scroll !important;
-                }
-              }
-            }
-            
-            html, body {
-              font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
-              margin: 0 !important;
-              padding: 0 !important;
-              border: none !important;
-              background: white;
-              width: 297mm;
-              -webkit-print-color-adjust: exact;
-              print-color-adjust: exact;
-              color-adjust: exact;
-            }
-
-            .receipt-template {
-              ${backgroundImage ? `background: url('${backgroundImage}') no-repeat center top;` : ''}
-              background-size: 297mm 420mm;
-              margin: 0 !important;
-              padding: 0 !important;
-              border: none !important;
-              width: 297mm;
-              height: 420mm;
-              position: relative;
-              page-break-after: always;
-              break-after: page;
-              -webkit-print-color-adjust: exact;
-              print-color-adjust: exact;
-              color-adjust: exact;
-            }
-
-            .receipt-template:last-child {
-              page-break-after: auto;
-              break-after: auto;
-            }
-          </style>
-        </head>
-        <body>
-          ${servicePages.map((pageServices, pageIndex) =>
-            generateServicePage(pageServices, pageIndex, pageIndex === servicePages.length - 1)
-          ).join('')}
-        </body>
-      </html>
-    `;
-    
-      // Add email functionality to the billHTML before writing
-      const enhancedBillHTML = billHTML.replace(
-        '</body>',
-        `
-          <!-- Print/Email Buttons -->
-          <div class="print-buttons" style="position: fixed; top: 10px; right: 10px; z-index: 10000; background: white; padding: 10px; border-radius: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-            <button class="btn btn-primary" onclick="window.print()" style="padding: 8px 16px; margin: 0 5px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; background-color: #0056b3; color: white;">🖨️ Print</button>
-            <button class="btn btn-success" onclick="showEmailModal()" style="padding: 8px 16px; margin: 0 5px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; background-color: #28a745; color: white;">📧 Send Email</button>
-            <button class="btn btn-secondary" onclick="window.close()" style="padding: 8px 16px; margin: 0 5px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; background-color: #6c757d; color: white;">Close</button>
-          </div>
-
-          <!-- Email Modal -->
-          <div id="emailModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 20000; align-items: center; justify-content: center;">
-            <div style="background: white; padding: 20px; border-radius: 8px; max-width: 400px; width: 90%;">
-              <h3 style="margin: 0 0 15px 0; font-size: 18px; font-weight: 600;">Send IPD Bill via Email</h3>
-              <input
-                type="email"
-                id="emailInput"
-                placeholder="Enter email address"
-                style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 15px; font-size: 14px;"
-                value="${bill.patients?.email || ''}"
-              />
-              <div id="emailStatus" style="margin-bottom: 15px; padding: 10px; border-radius: 4px; display: none;"></div>
-              <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                <button onclick="hideEmailModal()" style="padding: 8px 16px; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; background: white;">Cancel</button>
-                <button onclick="sendEmailWithPDF()" id="sendBtn" style="padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; background-color: #28a745; color: white;">Send Email</button>
-              </div>
-            </div>
-          </div>
-
-          <style>
-            @media print {
-              .print-buttons, #emailModal { display: none !important; }
-            }
-          </style>
-
-          <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-          <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-          <script>
-            // Bill data for email
-            const bill = ${JSON.stringify({
-              id: bill.id,
-              transaction_reference: bill.transaction_reference,
-              amount: bill.amount,
-              patientId: bill.patientId || bill.patient_id,
-              patients: {
-                first_name: bill.patients?.first_name || '',
-                last_name: bill.patients?.last_name || '',
-                email: bill.patients?.email || ''
-              }
-            })};
-
-            function showEmailModal() {
-              document.getElementById('emailModal').style.display = 'flex';
-              document.getElementById('emailInput').focus();
-            }
-
-            function hideEmailModal() {
-              document.getElementById('emailModal').style.display = 'none';
-              document.getElementById('emailStatus').style.display = 'none';
-            }
-
-            function showStatus(message, isError) {
-              const statusEl = document.getElementById('emailStatus');
-              statusEl.textContent = message;
-              statusEl.style.display = 'block';
-              statusEl.style.backgroundColor = isError ? '#fee' : '#efe';
-              statusEl.style.color = isError ? '#c00' : '#060';
-              statusEl.style.border = '1px solid ' + (isError ? '#fcc' : '#cfc');
-            }
-
-            async function sendEmailWithPDF() {
-              const email = document.getElementById('emailInput').value.trim();
-              if (!email || !email.includes('@')) {
-                showStatus('Please enter a valid email address', true);
-                return;
-              }
-
-              const sendBtn = document.getElementById('sendBtn');
-              sendBtn.disabled = true;
-              sendBtn.textContent = 'Sending...';
-              showStatus('Generating PDF...', false);
-
-              try {
-                const receiptEl = document.querySelector('.receipt-template') || document.body;
-
-                const canvas = await html2canvas(receiptEl, {
-                  scale: 1.5,  // Reduced from 2 to 1.5 to make smaller PDF
-                  useCORS: true,
-                  logging: false,
-                  backgroundColor: '#ffffff',
-                  windowWidth: 1122,
-                  windowHeight: 1587
-                });
-
-                showStatus('Converting to PDF...', false);
-
-                const { jsPDF } = window.jspdf;
-                const imgWidth = 297;
-                const imgHeight = 420;
-                const pdf = new jsPDF({
-                  orientation: 'portrait',
-                  unit: 'mm',
-                  format: [297, 420]
-                });
-
-                // Use JPEG with compression instead of PNG to reduce size
-                const imgData = canvas.toDataURL('image/jpeg', 0.85);  // 85% quality JPEG
-                pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
-                const pdfBase64 = pdf.output('datauristring').split(',')[1];
-
-                // Check PDF size
-                const pdfSizeKB = (pdfBase64.length * 3) / 4 / 1024;
-                console.log('📊 PDF size:', pdfSizeKB.toFixed(2), 'KB');
-
-                if (pdfSizeKB > 3000) {
-                  showStatus('⚠️ PDF is too large (' + pdfSizeKB.toFixed(0) + 'KB). Maximum is 3MB.', true);
-                  throw new Error('PDF attachment exceeds maximum size of 3MB');
-                }
-
-                showStatus('Sending email...', false);
-
-                // Use global function from main window to avoid CORS
-                console.log('🔵 Checking window.opener:', window.opener);
-                console.log('🔵 Checking window.opener.sendEmailFromPopup:', window.opener ? window.opener.sendEmailFromPopup : 'no opener');
-
-                if (window.opener && window.opener.sendEmailFromPopup) {
-                  const billRef = bill.transaction_reference || bill.id;
-                  const patientName = (bill.patients?.first_name || '') + ' ' + (bill.patients?.last_name || '');
-                  const billAmount = (bill.amount || 0).toLocaleString();
-                  const patId = bill.patientId || bill.patient_id || '';
-
-                  console.log('🔵 Preparing email data:', { email, billRef, patientName });
-
-                  const result = await window.opener.sendEmailFromPopup({
-                    to: email,
-                    subject: \`IPD Bill #\${billRef} - Valant Hospital\`,
-                    html: \`
-                      <!DOCTYPE html>
-                      <html>
-                      <head><meta charset="utf-8"></head>
-                      <body style="font-family: Arial, sans-serif; padding: 20px;">
-                        <h2>Dear \${patientName},</h2>
-                        <p>Thank you for choosing Valant Hospital. Please find your IPD bill attached.</p>
-                        <p><strong>Bill Number:</strong> \${billRef}</p>
-                        <p><strong>Amount:</strong> ₹\${billAmount}</p>
-                        <p>Best regards,<br><strong>Valant Hospital Team</strong></p>
-                      </body>
-                      </html>
-                    \`,
-                    patientId: patId,
-                    attachments: [{
-                      filename: \`IPD_Bill_\${billRef}.pdf\`,
-                      content: pdfBase64
-                    }]
-                  });
-
-                  console.log('🔵 Got result from sendEmailFromPopup:', result);
-                  console.log('🔵 Result type:', typeof result);
-                  console.log('🔵 Result is null/undefined?', result === null || result === undefined);
-                  console.log('🔵 Result.success:', result ? result.success : 'no result');
-                  console.log('🔵 Result.error:', result ? result.error : 'no result');
-
-                  if (!result) {
-                    throw new Error('No response from email service - result is ' + result);
-                  }
-
-                  if (result.success) {
-                    showStatus('✅ Email sent successfully to ' + email, false);
-                    setTimeout(() => hideEmailModal(), 2000);
-                  } else {
-                    throw new Error(result.error || 'Email service returned success=false with no error message');
-                  }
-                } else {
-                  throw new Error('Unable to send email. Please ensure the main window is open.');
-                }
-              } catch (error) {
-                console.error('Email error:', error);
-                showStatus('❌ Failed: ' + error.message, true);
-              } finally {
-                sendBtn.disabled = false;
-                sendBtn.textContent = 'Send Email';
-              }
-            }
-          </script>
-        </body>`
-      );
-
-      printWindow.document.write(enhancedBillHTML);
-      printWindow.document.close();
-
-      logger.log('Print bill with email functionality:', bill);
-    };
-  };
-
-  // Handler for Delete Bill button
   const handleDeleteBill = async (bill: any) => {
     const billRef = bill.transaction_reference || bill.id;
     const patientName = `${bill.patients?.first_name || ''} ${bill.patients?.last_name || ''}`.trim() || 'Unknown Patient';
-    
-    logger.log('🗑️ BEFORE DELETE - Bill details:', {
-      id: bill.id,
-      transaction_reference: bill.transaction_reference,
-      patient_name: patientName,
-      amount: bill.amount,
-      status: bill.status,
-      hospital_id: bill.hospital_id
-    });
-    
+
     const confirmDelete = window.confirm(
       `Are you sure you want to delete this IPD bill?\n\nBill: ${billRef}\nPatient: ${patientName}\nAmount: ₹${bill.amount?.toLocaleString() || '0'}\nStatus: ${bill.status}\n\nThis action cannot be undone.`
     );
-    
+
     if (!confirmDelete) {
-      logger.log('🚫 Delete cancelled by user');
       return;
     }
-    
+
     try {
-      logger.log('🗑️ Attempting to delete bill with ID:', bill.id);
-      logger.log('🗑️ Delete query conditions:', {
-        table: 'patient_transactions',
-        where_id: bill.id,
-        where_hospital_id: HOSPITAL_ID
-      });
-      
-      // First, let's check if the record exists before deletion
-      const { data: existingRecord, error: checkError } = await supabase
-        .from('patient_transactions')
-        .select('id, status, hospital_id')
-        .eq('id', bill.id)
-        .single();
-        
-      logger.log('🔍 Record check before deletion:', { data: existingRecord, error: checkError });
-      
-      if (checkError || !existingRecord) {
-        logger.error('❌ Record not found before deletion:', checkError);
-        toast.error('Bill not found in database');
-        await loadIPDBills(); // Refresh to sync with actual database state
-        return;
-      }
-      
-      // Try deletion with just ID first (more permissive)
-      const { data: deleteResult, error: deleteError } = await supabase
-        .from('patient_transactions')
-        .delete()
-        .eq('id', bill.id)
-        .select(); // Return deleted records to confirm
-        
-      // If deletion failed, try alternative approach (update status to DELETED)
-      if (deleteError && deleteError.code) {
-        logger.log('🔄 Direct deletion failed, trying soft delete (status update)...');
-        
-        const { data: updateResult, error: updateError } = await supabase
-          .from('patient_transactions')
-          .update({ 
-            status: 'DELETED',
-            description: (bill.description || '') + ' [DELETED]'
-          })
-          .eq('id', bill.id)
-          .select();
-          
-        logger.log('🔄 Soft delete result:', { data: updateResult, error: updateError });
-        
-        if (!updateError && updateResult && updateResult.length > 0) {
-          logger.log('✅ Bill marked as deleted (soft delete)');
-          toast.success(`IPD bill ${billRef} deleted successfully`);
-          await loadIPDBills();
-          return;
-        }
-      }
-        
-      logger.log('🗑️ Delete operation result:', { data: deleteResult, error: deleteError });
-      
-      if (deleteError) {
-        logger.error('❌ Delete operation failed:', deleteError);
-        logger.error('❌ Delete error details:', {
-          message: deleteError.message,
-          details: deleteError.details,
-          hint: deleteError.hint,
-          code: deleteError.code
-        });
-        throw deleteError;
-      }
-      
-      if (!deleteResult || deleteResult.length === 0) {
-        logger.warn('⚠️ Delete operation returned no results - record may not exist');
-        toast.error('Bill may have already been deleted');
-      } else {
-        logger.log('✅ Bill deleted successfully:', deleteResult);
-        toast.success(`IPD bill ${billRef} deleted successfully`);
-      }
-      
-      // Always refresh the bills list to get current state
-      logger.log('🔄 Refreshing bills list after delete operation...');
+      logger.log('🗑️ Deleting bill via BillingService:', bill.id);
+
+      await BillingService.deleteIPDBill(bill.id);
+
+      logger.log('✅ Bill deleted successfully');
+      toast.success(`IPD bill ${billRef} deleted successfully`);
+
+      // Refresh the bills list
       await loadIPDBills();
-      
+
     } catch (error: any) {
       logger.error('❌ Failed to delete bill:', error);
-      logger.error('❌ Full error object:', JSON.stringify(error, null, 2));
       toast.error(`Failed to delete bill: ${error.message || error}`);
-      
+
       // Still refresh to sync with database state
       await loadIPDBills();
     }
@@ -4763,6 +2740,240 @@ Description: ${bill.description || 'N/A'}
     toast.success('Opening deposit receipt for printing...');
   };
 
+  // Handler for Print Bill button
+  const handlePrintBill = (bill: any) => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast.error('Failed to open print window');
+      return;
+    }
+
+    const getCurrentTime = () => {
+      const now = new Date();
+      return now.toLocaleTimeString('en-IN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true
+      });
+    };
+
+    const convertToWords = (amount: number): string => {
+      if (amount === 0) return 'Zero';
+      const units = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
+      const teens = ['Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+      const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+      if (amount < 10) return units[amount];
+      if (amount < 20) return teens[amount - 10];
+      if (amount < 100) return tens[Math.floor(amount / 10)] + (amount % 10 ? ' ' + units[amount % 10] : '');
+      if (amount < 1000) return units[Math.floor(amount / 100)] + ' Hundred' + (amount % 100 ? ' ' + convertToWords(amount % 100) : '');
+      if (amount < 100000) return convertToWords(Math.floor(amount / 1000)) + ' Thousand' + (amount % 1000 ? ' ' + convertToWords(amount % 1000) : '');
+      return 'Amount Too Large';
+    };
+
+    const patientName = bill.patientName || (bill.patients ? `${bill.patients.first_name} ${bill.patients.last_name}` : 'Unknown');
+    const billDate = bill.billDate || bill.transaction_date || new Date().toISOString().split('T')[0];
+    const billId = bill.billId || bill.transaction_reference || bill.id;
+
+    // Parse services and stay segments if they are JSON strings (from DB) or use as is
+    let services = bill.services || [];
+    let staySegments = bill.staySegments || [];
+
+    // If reading from raw transaction, we might need to parse description or other fields to reconstruct details
+    // For now, we'll assume the bill object passed has the necessary structure or we display basic info
+
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>IPD Bill - ${billId}</title>
+        <style>
+          @media print {
+            @page { size: A4; margin: 10mm; }
+            body { -webkit-print-color-adjust: exact; }
+          }
+          body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+          .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
+          .hospital-name { font-size: 24px; font-weight: bold; color: #0056b3; }
+          .bill-title { text-align: center; font-size: 18px; font-weight: bold; margin-bottom: 20px; text-decoration: underline; }
+          .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+          .info-item { margin-bottom: 5px; }
+          .label { font-weight: bold; }
+          table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          th { background-color: #f2f2f2; }
+          .text-right { text-align: right; }
+          .totals { margin-top: 20px; float: right; width: 300px; }
+          .total-row { display: flex; justify-content: space-between; margin-bottom: 5px; }
+          .grand-total { font-weight: bold; font-size: 16px; border-top: 1px solid #333; padding-top: 5px; }
+          .footer { margin-top: 50px; text-align: center; font-size: 12px; color: #666; clear: both; }
+          .signatures { display: flex; justify-content: space-between; margin-top: 50px; }
+          .signature-box { text-align: center; border-top: 1px solid #333; width: 200px; padding-top: 5px; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="hospital-name">HOSPITAL CRM PRO</div>
+          <div>Complete Healthcare Management System</div>
+          <div>📍 Your Hospital Address | 📞 Contact Number</div>
+        </div>
+
+        <div class="bill-title">IPD FINAL BILL</div>
+
+        <div class="info-grid">
+          <div>
+            <div class="info-item"><span class="label">Patient Name:</span> ${patientName}</div>
+            <div class="info-item"><span class="label">Patient ID:</span> ${bill.patientId || bill.patients?.patient_id || 'N/A'}</div>
+            <div class="info-item"><span class="label">Admission Date:</span> ${bill.admissionDate || 'N/A'}</div>
+            <div class="info-item"><span class="label">Discharge Date:</span> ${bill.dischargeDate || 'N/A'}</div>
+          </div>
+          <div class="text-right">
+            <div class="info-item"><span class="label">Bill No:</span> ${billId}</div>
+            <div class="info-item"><span class="label">Bill Date:</span> ${billDate}</div>
+            <div class="info-item"><span class="label">Payment Mode:</span> ${bill.paymentMode || 'CASH'}</div>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Description</th>
+              <th class="text-right">Amount (₹)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${bill.admissionCharges > 0 ? `
+            <tr>
+              <td>Admission Charges</td>
+              <td class="text-right">${bill.admissionCharges.toFixed(2)}</td>
+            </tr>` : ''}
+            
+            ${staySegments.map((seg: any) => `
+            <tr>
+              <td>Room Charges: ${seg.roomType} (${seg.days} days)</td>
+              <td class="text-right">${seg.totalCharge.toFixed(2)}</td>
+            </tr>`).join('')}
+
+            ${services.map((srv: any) => `
+            <tr>
+              <td>${srv.name}</td>
+              <td class="text-right">${srv.amount.toFixed(2)}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+
+        <div class="totals">
+          <div class="total-row">
+            <span>Total Amount:</span>
+            <span>₹${(bill.totalAmount + (bill.discount || 0)).toFixed(2)}</span>
+          </div>
+          ${bill.discount > 0 ? `
+          <div class="total-row">
+            <span>Discount:</span>
+            <span>- ₹${bill.discount.toFixed(2)}</span>
+          </div>` : ''}
+          <div class="total-row grand-total">
+            <span>Net Payable:</span>
+            <span>₹${bill.totalAmount.toFixed(2)}</span>
+          </div>
+          <div style="margin-top: 10px; font-style: italic; font-size: 12px;">
+            Amount in words: ${convertToWords(Math.round(bill.totalAmount))} Rupees Only
+          </div>
+        </div>
+
+        <div class="signatures">
+          <div class="signature-box">Prepared By</div>
+          <div class="signature-box">Authorized Signatory</div>
+        </div>
+
+        <div class="footer">
+          <p>This is a computer-generated bill and does not require a physical signature.</p>
+          <p>Generated on ${new Date().toLocaleString()}</p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.onload = () => {
+      setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+      }, 250);
+    };
+  };
+
+  // Handler for View Bill
+  const handleViewBill = (bill: any) => {
+    // For now, view just opens the print view which shows all details
+    handlePrintBill(bill);
+  };
+
+  // Handler for Edit Bill
+  const handleEditBill = (bill: any) => {
+    logger.log('✏️ Editing bill:', bill);
+
+    // Set editing state
+    setEditingBill(bill);
+
+    // Set patient
+    if (bill.patients) {
+      setSelectedPatient(bill.patients);
+      setPatientSearchTerm(`${bill.patients.first_name} ${bill.patients.last_name}`);
+    }
+
+    // Set dates
+    if (bill.billDate || bill.transaction_date) {
+      setBillingDate((bill.billDate || bill.transaction_date).split('T')[0]);
+    }
+
+    // Set stay segments if available
+    if (bill.staySegments && Array.isArray(bill.staySegments)) {
+      setStaySegments(bill.staySegments);
+    }
+
+    // Set services if available
+    if (bill.services && Array.isArray(bill.services)) {
+      // Map back to MedicalService format if needed, or just set selected services
+      // This might need more complex mapping depending on how services are stored vs displayed
+      const mappedServices = bill.services.map((s: any) => ({
+        ...s,
+        selected: true
+      }));
+      setSelectedServices(mappedServices);
+    }
+
+    // Set payment details
+    setPaymentMode(bill.paymentMode || 'CASH');
+    setDiscount(bill.discount || 0);
+    setTax(bill.tax || 0);
+
+    // Show the form
+    setShowCreateBill(true);
+    toast.success('Bill loaded for editing');
+  };
+
+  // Handler for Mark Completed
+  const handleMarkCompleted = async (bill: any) => {
+    if (!confirm('Are you sure you want to mark this bill as COMPLETED? This usually means payment has been received.')) {
+      return;
+    }
+
+    try {
+      // Update status via BillingService
+      const updatedBill = { ...bill, status: 'PAID' };
+      await BillingService.saveIPDBill(updatedBill);
+
+      toast.success('Bill marked as COMPLETED');
+      await loadIPDBills();
+    } catch (error: any) {
+      logger.error('Failed to update bill status:', error);
+      toast.error('Failed to update status');
+    }
+  };
+
   // Handler for Export History button
   const handleExportHistory = () => {
     if (depositHistory.length === 0) {
@@ -4892,7 +3103,7 @@ Description: ${bill.description || 'N/A'}
                   logger.log('🎯 MAIN VIEW RENDER: billsLoading:', billsLoading, 'ipdBills.length:', ipdBills.length);
                   return null;
                 })()}
-                
+
                 {billsLoading ? (
                   <tr>
                     <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
@@ -4904,88 +3115,86 @@ Description: ${bill.description || 'N/A'}
                   </tr>
                 ) : ipdBills && ipdBills.length > 0 ? (
                   ipdBills.map((bill, index) => (
-                      <tr key={bill.id || index} className="hover:bg-gray-50 border-t">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          <div className="flex items-center">
-                            <span className="mr-2">{bill.display_icon || (bill.transaction_type === 'SERVICE' ? '🧾' : '💰')}</span>
-                            {bill.transaction_reference || bill.id || `BILL-${index + 1}`}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {bill.patients ? 
-                            `${bill.patients.first_name || ''} ${bill.patients.last_name || ''}`.trim() || 'Unknown Patient'
-                            : 'Loading...'
-                          }
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          <div className="flex items-center">
-                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full mr-2 ${
-                              bill.transaction_type === 'SERVICE' 
-                                ? 'bg-blue-100 text-blue-800' 
-                                : 'bg-green-100 text-green-800'
+                    <tr key={bill.id || index} className="hover:bg-gray-50 border-t">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <div className="flex items-center">
+                          <span className="mr-2">{bill.display_icon || (bill.transaction_type === 'SERVICE' ? '🧾' : '💰')}</span>
+                          {bill.transaction_reference || bill.id || `BILL-${index + 1}`}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {bill.patients ?
+                          `${bill.patients.first_name || ''} ${bill.patients.last_name || ''}`.trim() || 'Unknown Patient'
+                          : 'Loading...'
+                        }
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <div className="flex items-center">
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full mr-2 ${bill.transaction_type === 'SERVICE'
+                            ? 'bg-blue-100 text-blue-800'
+                            : 'bg-green-100 text-green-800'
                             }`}>
-                              {bill.display_type || 
-                               ((bill.transaction_type === 'SERVICE' && bill.description?.includes('[IPD_BILL]')) ? 'IPD Bill' : 
-                                bill.transaction_type === 'SERVICE' ? 'Service Bill' : 
-                                ['ADMISSION_FEE', 'DEPOSIT', 'ADVANCE_PAYMENT'].includes(bill.transaction_type) ? 'Deposit' : bill.transaction_type)}
-                            </span>
-                            ₹{bill.amount?.toLocaleString() || '0'}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            bill.status === 'COMPLETED' 
-                              ? 'bg-blue-100 text-blue-800' 
-                              : bill.status === 'PAID' 
-                              ? 'bg-green-100 text-green-800' 
-                              : bill.status === 'PENDING'
+                            {bill.display_type ||
+                              ((bill.transaction_type === 'SERVICE' && bill.description?.includes('[IPD_BILL]')) ? 'IPD Bill' :
+                                bill.transaction_type === 'SERVICE' ? 'Service Bill' :
+                                  ['ADMISSION_FEE', 'DEPOSIT', 'ADVANCE_PAYMENT'].includes(bill.transaction_type) ? 'Deposit' : bill.transaction_type)}
+                          </span>
+                          ₹{bill.amount?.toLocaleString() || '0'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${bill.status === 'COMPLETED'
+                          ? 'bg-blue-100 text-blue-800'
+                          : bill.status === 'PAID'
+                            ? 'bg-green-100 text-green-800'
+                            : bill.status === 'PENDING'
                               ? 'bg-yellow-100 text-yellow-800'
                               : 'bg-red-100 text-red-800'
                           }`}>
-                            {bill.status || 'UNKNOWN'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {bill.transaction_date ? new Date(bill.transaction_date).toLocaleDateString() : (bill.created_at ? new Date(bill.created_at).toLocaleDateString() : 'N/A')}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          {bill.status || 'UNKNOWN'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {bill.transaction_date ? new Date(bill.transaction_date).toLocaleDateString() : (bill.created_at ? new Date(bill.created_at).toLocaleDateString() : 'N/A')}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button
+                          className="text-blue-600 hover:text-blue-900 mr-3"
+                          onClick={() => handleViewBill(bill)}
+                        >
+                          View
+                        </button>
+                        <button
+                          className="text-orange-600 hover:text-orange-900 mr-3"
+                          onClick={() => handleEditBill(bill)}
+                          title="Edit Bill"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          className="text-green-600 hover:text-green-900 mr-3"
+                          onClick={() => handlePrintBill(bill)}
+                        >
+                          Print
+                        </button>
+                        {(bill.status === 'PENDING' || bill.status === 'PAID') && bill.status !== 'COMPLETED' && (
                           <button
                             className="text-blue-600 hover:text-blue-900 mr-3"
-                            onClick={() => handleViewBill(bill)}
+                            onClick={() => handleMarkCompleted(bill)}
+                            title="Mark as Completed"
                           >
-                            View
+                            ✓ Complete
                           </button>
-                          <button
-                            className="text-orange-600 hover:text-orange-900 mr-3"
-                            onClick={() => handleEditBill(bill)}
-                            title="Edit Bill"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            className="text-green-600 hover:text-green-900 mr-3"
-                            onClick={() => handlePrintBill(bill)}
-                          >
-                            Print
-                          </button>
-                          {(bill.status === 'PENDING' || bill.status === 'PAID') && bill.status !== 'COMPLETED' && (
-                            <button 
-                              className="text-blue-600 hover:text-blue-900 mr-3"
-                              onClick={() => handleMarkCompleted(bill)}
-                              title="Mark as Completed"
-                            >
-                              ✓ Complete
-                            </button>
-                          )}
-                          <button 
-                            className="text-red-600 hover:text-red-900"
-                            onClick={() => handleDeleteBill(bill)}
-                          >
-                            Delete
-                          </button>
-                        </td>
-                      </tr>
-                    ))
+                        )}
+                        <button
+                          className="text-red-600 hover:text-red-900"
+                          onClick={() => handleDeleteBill(bill)}
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))
                 ) : (
                   <tr>
                     <td className="px-6 py-4 whitespace-nowrap text-center text-gray-500" colSpan={6}>
@@ -5083,25 +3292,25 @@ Description: ${bill.description || 'N/A'}
 
       {/* Tab Navigation */}
       {/* IPD Billing Section */}
-          {/* Initial IPD Billing List Interface */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-800">IPD Billing</h2>
-              <p className="text-gray-600">Manage inpatient department bills</p>
-            </div>
-            <div className="flex space-x-2">
-              <button
-                onClick={() => {
-                  resetForm();
-                  setShowCreateBill(true);
-                }}
-                className="mt-4 md:mt-0 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center space-x-2 transition-colors"
-              >
-                <Plus className="h-4 w-4" />
-                <span>Create IPD Bill</span>
-              </button>
-            </div>
-          </div>
+      {/* Initial IPD Billing List Interface */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-800">IPD Billing</h2>
+          <p className="text-gray-600">Manage inpatient department bills</p>
+        </div>
+        <div className="flex space-x-2">
+          <button
+            onClick={() => {
+              resetForm();
+              setShowCreateBill(true);
+            }}
+            className="mt-4 md:mt-0 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center space-x-2 transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Create IPD Bill</span>
+          </button>
+        </div>
+      </div>
 
       {/* Search and Filters */}
       <div className="bg-white p-4 rounded-lg shadow-sm border">
@@ -5151,7 +3360,7 @@ Description: ${bill.description || 'N/A'}
                 logger.log('🎯 RENDER: ipdBills array:', ipdBills);
                 return null;
               })()}
-              
+
               {/* Force render bills for debugging */}
               {ipdBills && ipdBills.length > 0 ? (
                 <>
@@ -5170,20 +3379,19 @@ Description: ${bill.description || 'N/A'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         <div>
-                          <div>{bill.patients ? 
+                          <div>{bill.patients ?
                             `${bill.patients.first_name || ''} ${bill.patients.last_name || ''}`.trim() || 'Unknown Patient'
                             : 'Loading...'
                           }</div>
                           <div className="text-xs text-gray-500">
-                            <span className={`inline-flex px-1 py-0.5 rounded text-xs ${
-                              bill.transaction_type === 'SERVICE' 
-                                ? 'bg-blue-100 text-blue-700' 
-                                : 'bg-green-100 text-green-700'
-                            }`}>
-                              {bill.display_type || 
-                               ((bill.transaction_type === 'SERVICE' && bill.description?.includes('[IPD_BILL]')) ? 'IPD Bill' : 
-                                bill.transaction_type === 'SERVICE' ? 'Service Bill' : 
-                                ['ADMISSION_FEE', 'DEPOSIT', 'ADVANCE_PAYMENT'].includes(bill.transaction_type) ? 'Deposit' : bill.transaction_type)}
+                            <span className={`inline-flex px-1 py-0.5 rounded text-xs ${bill.transaction_type === 'SERVICE'
+                              ? 'bg-blue-100 text-blue-700'
+                              : 'bg-green-100 text-green-700'
+                              }`}>
+                              {bill.display_type ||
+                                ((bill.transaction_type === 'SERVICE' && bill.description?.includes('[IPD_BILL]')) ? 'IPD Bill' :
+                                  bill.transaction_type === 'SERVICE' ? 'Service Bill' :
+                                    ['ADMISSION_FEE', 'DEPOSIT', 'ADVANCE_PAYMENT'].includes(bill.transaction_type) ? 'Deposit' : bill.transaction_type)}
                             </span>
                           </div>
                         </div>
@@ -5195,15 +3403,14 @@ Description: ${bill.description || 'N/A'}
                         ₹{bill.amount?.toLocaleString() || '0'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          bill.status === 'COMPLETED' 
-                            ? 'bg-blue-100 text-blue-800' 
-                            : bill.status === 'PAID' 
-                            ? 'bg-green-100 text-green-800' 
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${bill.status === 'COMPLETED'
+                          ? 'bg-blue-100 text-blue-800'
+                          : bill.status === 'PAID'
+                            ? 'bg-green-100 text-green-800'
                             : bill.status === 'PENDING'
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : 'bg-red-100 text-red-800'
-                        }`}>
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : 'bg-red-100 text-red-800'
+                          }`}>
                           {bill.status || 'UNKNOWN'}
                         </span>
                       </td>
@@ -5211,20 +3418,20 @@ Description: ${bill.description || 'N/A'}
                         {bill.transaction_date ? new Date(bill.transaction_date).toLocaleDateString() : (bill.created_at ? new Date(bill.created_at).toLocaleDateString() : 'N/A')}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button 
+                        <button
                           className="text-blue-600 hover:text-blue-900 mr-3"
                           onClick={() => handleViewBill(bill)}
                         >
                           View
                         </button>
-                        <button 
+                        <button
                           className="text-green-600 hover:text-green-900 mr-3"
                           onClick={() => handlePrintBill(bill)}
                         >
                           Print
                         </button>
                         {(bill.status === 'PENDING' || bill.status === 'PAID') && bill.status !== 'COMPLETED' && (
-                          <button 
+                          <button
                             className="text-blue-600 hover:text-blue-900 mr-3"
                             onClick={() => handleMarkCompleted(bill)}
                             title="Mark as Completed"
@@ -5232,7 +3439,7 @@ Description: ${bill.description || 'N/A'}
                             ✓ Complete
                           </button>
                         )}
-                        <button 
+                        <button
                           className="text-red-600 hover:text-red-900"
                           onClick={() => handleDeleteBill(bill)}
                         >
@@ -5295,7 +3502,7 @@ Description: ${bill.description || 'N/A'}
                     <Search className="h-4 w-4" />
                     <span>{selectedPatient ? 'Change Patient' : 'Select Patient'}</span>
                   </button>
-                  
+
                   {selectedPatient && (
                     <div className="text-sm text-gray-700">
                       <strong>{`${selectedPatient.first_name} ${selectedPatient.last_name || ''}`.trim()}</strong> - {selectedPatient.phone}
@@ -5313,7 +3520,7 @@ Description: ${bill.description || 'N/A'}
                             📈 IPD History - {selectedPatient.first_name} {selectedPatient.last_name}
                           </h4>
                           <p className="text-sm text-gray-600">
-                            IPD No: {getPatientDisplayData().ipdNo} | 
+                            IPD No: {getPatientDisplayData().ipdNo} |
                             Admitted: {selectedPatient.admissions?.[0]?.admission_date ? new Date(selectedPatient.admissions[0].admission_date).toLocaleDateString() : 'N/A'}
                           </p>
                         </div>
@@ -5332,7 +3539,7 @@ Description: ${bill.description || 'N/A'}
                         </div>
                       </div>
                     </div>
-                    
+
                     <div className="p-4">
                       {historyLoading ? (
                         <div className="flex items-center justify-center py-8">
@@ -5369,32 +3576,30 @@ Description: ${bill.description || 'N/A'}
                                       )}
                                     </td>
                                     <td className="px-3 py-2 text-xs">
-                                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                        transaction.transaction_type === 'SERVICE' || (transaction.transaction_type === 'SERVICE' && transaction.description?.includes('[IPD_BILL]')) 
-                                          ? 'bg-blue-100 text-blue-800' 
-                                          : transaction.transaction_type === 'ADMISSION_FEE'
+                                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${transaction.transaction_type === 'SERVICE' || (transaction.transaction_type === 'SERVICE' && transaction.description?.includes('[IPD_BILL]'))
+                                        ? 'bg-blue-100 text-blue-800'
+                                        : transaction.transaction_type === 'ADMISSION_FEE'
                                           ? 'bg-green-100 text-green-800'
                                           : 'bg-gray-100 text-gray-800'
-                                      }`}>
+                                        }`}>
                                         {transaction.transaction_type === 'SERVICE' && transaction.description?.includes('[IPD_BILL]') ? 'IPD Bill' :
-                                         transaction.transaction_type === 'SERVICE' ? 'Service' :
-                                         transaction.transaction_type === 'ADMISSION_FEE' ? 'Deposit' :
-                                         transaction.transaction_type}
+                                          transaction.transaction_type === 'SERVICE' ? 'Service' :
+                                            transaction.transaction_type === 'ADMISSION_FEE' ? 'Deposit' :
+                                              transaction.transaction_type}
                                       </span>
                                     </td>
                                     <td className="px-3 py-2 text-xs text-right font-medium">
                                       ₹{transaction.amount?.toLocaleString() || '0'}
                                     </td>
                                     <td className="px-3 py-2 text-center">
-                                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                        transaction.status === 'COMPLETED' 
-                                          ? 'bg-blue-100 text-blue-800' 
-                                          : transaction.status === 'PAID' 
-                                          ? 'bg-green-100 text-green-800' 
+                                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${transaction.status === 'COMPLETED'
+                                        ? 'bg-blue-100 text-blue-800'
+                                        : transaction.status === 'PAID'
+                                          ? 'bg-green-100 text-green-800'
                                           : transaction.status === 'PENDING'
-                                          ? 'bg-yellow-100 text-yellow-800'
-                                          : 'bg-red-100 text-red-800'
-                                      }`}>
+                                            ? 'bg-yellow-100 text-yellow-800'
+                                            : 'bg-red-100 text-red-800'
+                                        }`}>
                                         {transaction.status || 'UNKNOWN'}
                                       </span>
                                     </td>
@@ -5403,7 +3608,7 @@ Description: ${bill.description || 'N/A'}
                               </tbody>
                             </table>
                           </div>
-                          
+
                           {/* Summary Footer */}
                           <div className="mt-3 pt-3 border-t border-gray-200">
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
@@ -5452,8 +3657,8 @@ Description: ${bill.description || 'N/A'}
                       <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2">
                           <label className="text-sm font-medium text-gray-700">Billing Date:</label>
-                          <input 
-                            type="date" 
+                          <input
+                            type="date"
                             value={billingDate}
                             onChange={(e) => setBillingDate(e.target.value)}
                             className="px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
@@ -5474,12 +3679,12 @@ Description: ${bill.description || 'N/A'}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Admission Fee (₹)</label>
-                          <input 
-                            type="number" 
+                          <input
+                            type="number"
                             value={admissionFee}
                             onChange={(e) => setAdmissionFee(parseFloat(e.target.value) || 0)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                            placeholder="2000.00" 
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="2000.00"
                           />
                         </div>
                         <div>
@@ -5606,14 +3811,14 @@ Description: ${bill.description || 'N/A'}
                             Total: ₹{calculateTotalStayCharges().toFixed(2)}
                           </span>
                         </h5>
-                        <button 
+                        <button
                           onClick={addStaySegment}
                           className="px-3 py-1 bg-green-100 text-green-700 rounded-md hover:bg-green-200 transition-colors text-sm"
                         >
                           + Add Stay Period
                         </button>
                       </div>
-                      
+
                       {/* Dynamic Stay Segments */}
                       {staySegments.map((segment, index) => (
                         <div key={segment.id} className="bg-gray-50 p-4 rounded-lg mb-4 relative">
@@ -5625,7 +3830,7 @@ Description: ${bill.description || 'N/A'}
                               <X className="h-4 w-4" />
                             </button>
                           )}
-                          
+
                           <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
                             <div>
                               <label className="block text-sm font-medium text-gray-700 mb-1">Room Type</label>
@@ -5699,11 +3904,11 @@ Description: ${bill.description || 'N/A'}
                                     'Semi Private': { bed: 1500, nursing: 250, rmo: 125, doctor: 600 }
                                   };
                                   const rate = rates[newRoomType as keyof typeof rates] || rates['General Ward'];
-                                  
+
                                   // Update all fields in a single state change
-                                  setStaySegments(staySegments.map(seg => 
-                                    seg.id === segment.id ? { 
-                                      ...seg, 
+                                  setStaySegments(staySegments.map(seg =>
+                                    seg.id === segment.id ? {
+                                      ...seg,
                                       roomType: newRoomType,
                                       bedChargePerDay: rate.bed,
                                       nursingChargePerDay: rate.nursing,
@@ -5723,62 +3928,62 @@ Description: ${bill.description || 'N/A'}
                             </div>
                             <div>
                               <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-                              <input 
-                                type="date" 
+                              <input
+                                type="date"
                                 value={segment.startDate}
                                 onChange={(e) => updateStaySegment(segment.id, 'startDate', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500" 
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                               />
                             </div>
                             <div>
                               <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-                              <input 
-                                type="date" 
+                              <input
+                                type="date"
                                 value={segment.endDate}
                                 onChange={(e) => updateStaySegment(segment.id, 'endDate', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500" 
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                               />
                             </div>
                             <div>
                               <label className="block text-sm font-medium text-gray-700 mb-1">Bed Charge/Day</label>
-                              <input 
-                                type="number" 
+                              <input
+                                type="number"
                                 value={segment.bedChargePerDay}
                                 onChange={(e) => updateStaySegment(segment.id, 'bedChargePerDay', parseFloat(e.target.value) || 0)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500" 
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                               />
                             </div>
                             <div>
                               <label className="block text-sm font-medium text-gray-700 mb-1">Nursing/Day</label>
-                              <input 
-                                type="number" 
+                              <input
+                                type="number"
                                 value={segment.nursingChargePerDay}
                                 onChange={(e) => updateStaySegment(segment.id, 'nursingChargePerDay', parseFloat(e.target.value) || 0)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500" 
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                               />
                             </div>
                             <div>
                               <label className="block text-sm font-medium text-gray-700 mb-1">RMO/Day</label>
-                              <input 
-                                type="number" 
+                              <input
+                                type="number"
                                 value={segment.rmoChargePerDay}
                                 onChange={(e) => updateStaySegment(segment.id, 'rmoChargePerDay', parseFloat(e.target.value) || 0)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500" 
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                               />
                             </div>
                             <div>
                               <label className="block text-sm font-medium text-gray-700 mb-1">Doctor/Day</label>
-                              <input 
-                                type="number" 
+                              <input
+                                type="number"
                                 value={segment.doctorChargePerDay}
                                 onChange={(e) => updateStaySegment(segment.id, 'doctorChargePerDay', parseFloat(e.target.value) || 0)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500" 
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                               />
                             </div>
                           </div>
                           <div className="mt-3 text-sm text-gray-600 bg-blue-50 px-3 py-2 rounded flex justify-between items-center">
                             <span>
-                              Days: {calculateDays(segment.startDate, segment.endDate)} | 
+                              Days: {calculateDays(segment.startDate, segment.endDate)} |
                               Per Day: ₹{(segment.bedChargePerDay + segment.nursingChargePerDay + segment.rmoChargePerDay + segment.doctorChargePerDay).toFixed(2)}
                             </span>
                             <span className="font-semibold text-blue-700">
@@ -5817,7 +4022,7 @@ Description: ${bill.description || 'N/A'}
                             className="w-full px-3 py-2 border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 pl-10"
                           />
                           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-purple-400 h-4 w-4" />
-                          
+
                           {/* Services Dropdown */}
                           {showServiceDropdown && (
                             <div className="absolute z-10 w-full mt-1 bg-white border border-purple-300 rounded-md shadow-lg max-h-64 overflow-y-auto">
@@ -5849,7 +4054,7 @@ Description: ${bill.description || 'N/A'}
                                   No services found matching "{serviceSearchTerm}"
                                 </div>
                               )}
-                              
+
                               {/* Quick Categories */}
                               {serviceSearchTerm.length === 0 && (
                                 <div className="border-t border-gray-200 bg-gray-50">
@@ -5872,11 +4077,11 @@ Description: ${bill.description || 'N/A'}
                             </div>
                           )}
                         </div>
-                        
+
                         {/* Click outside to close dropdown */}
                         {showServiceDropdown && (
-                          <div 
-                            className="fixed inset-0 z-5" 
+                          <div
+                            className="fixed inset-0 z-5"
                             onClick={() => setShowServiceDropdown(false)}
                           />
                         )}
@@ -5933,21 +4138,21 @@ Description: ${bill.description || 'N/A'}
                       <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-200">
                         <h6 className="text-sm font-medium text-indigo-800 mb-3">Add Custom Service</h6>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                          <input 
-                            type="text" 
-                            placeholder="Service name..." 
+                          <input
+                            type="text"
+                            placeholder="Service name..."
                             value={customServiceName}
                             onChange={(e) => setCustomServiceName(e.target.value)}
                             className="px-3 py-2 border border-indigo-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                           />
-                          <input 
-                            type="number" 
-                            placeholder="Amount (₹)" 
+                          <input
+                            type="number"
+                            placeholder="Amount (₹)"
                             value={customServiceAmount}
                             onChange={(e) => setCustomServiceAmount(e.target.value)}
                             className="px-3 py-2 border border-indigo-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                           />
-                          <button 
+                          <button
                             onClick={saveCustomService}
                             className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
                           >
@@ -5988,27 +4193,27 @@ Description: ${bill.description || 'N/A'}
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Discount (₹)</label>
-                          <input 
-                            type="number" 
+                          <input
+                            type="number"
                             value={discount}
                             onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                            placeholder="0.00" 
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="0.00"
                           />
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Additional Charges (₹)</label>
-                          <input 
-                            type="number" 
+                          <input
+                            type="number"
                             value={tax}
                             onChange={(e) => setTax(parseFloat(e.target.value) || 0)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                            placeholder="0.00" 
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="0.00"
                           />
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Payment Mode</label>
-                          <select 
+                          <select
                             value={finalPaymentMode}
                             onChange={(e) => setFinalPaymentMode(e.target.value as 'CASH' | 'CARD' | 'UPI' | 'BANK_TRANSFER')}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -6038,7 +4243,7 @@ Description: ${bill.description || 'N/A'}
                         <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors flex items-center space-x-2">
                           <span>Save as Draft</span>
                         </button>
-                        <button 
+                        <button
                           onClick={handlePrint}
                           className="px-4 py-2 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors flex items-center space-x-2"
                         >
@@ -6083,7 +4288,7 @@ Description: ${bill.description || 'N/A'}
                 <X className="h-5 w-5" />
               </button>
             </div>
-            
+
             {/* Search Input */}
             <div className="mb-4">
               <div className="relative">
@@ -6112,9 +4317,9 @@ Description: ${bill.description || 'N/A'}
                 filteredPatients.map((patient) => {
                   const latestAdmission = patient.admissions?.[0];
                   const isAdmitted = latestAdmission && !latestAdmission.discharge_date;
-                  
+
                   return (
-                    <div 
+                    <div
                       key={patient.patient_id}
                       onClick={() => handlePatientSelect(patient)}
                       className="p-4 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 cursor-pointer transition-colors"
@@ -6150,7 +4355,7 @@ Description: ${bill.description || 'N/A'}
                               )}
                             </div>
                           </div>
-                          
+
                           {/* Show admission details if available */}
                           {latestAdmission && (
                             <div className="mt-2 pt-2 border-t border-gray-100">
@@ -6184,15 +4389,15 @@ Description: ${bill.description || 'N/A'}
                 <div className="text-center py-8">
                   <p className="text-gray-500">Start typing to search for patients</p>
                   <p className="text-sm text-gray-400 mt-1">Showing recently admitted patients by default</p>
-                  
+
                   {/* Show recent patients */}
                   <div className="mt-4 space-y-2">
                     {patients.slice(0, 10).map((patient) => {
                       const latestAdmission = patient.admissions?.[0];
                       const isAdmitted = latestAdmission && !latestAdmission.discharge_date;
-                      
+
                       return (
-                        <div 
+                        <div
                           key={patient.patient_id}
                           onClick={() => handlePatientSelect(patient)}
                           className="p-3 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 cursor-pointer transition-colors text-left"

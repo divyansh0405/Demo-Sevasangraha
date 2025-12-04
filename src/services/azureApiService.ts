@@ -1,9 +1,7 @@
 import axios from 'axios';
 
-// API Configuration
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
 
-// Create axios instance
 const api = axios.create({
   baseURL: API_URL,
   headers: {
@@ -43,10 +41,10 @@ export const authService = {
   async login(email: string, password: string) {
     const response = await api.post('/auth/login', { email, password });
     const { token, user } = response.data;
-    
+
     localStorage.setItem('authToken', token);
     localStorage.setItem('user', JSON.stringify(user));
-    
+
     return { token, user };
   },
 
@@ -58,7 +56,7 @@ export const authService = {
   async getCurrentUser() {
     const userStr = localStorage.getItem('user');
     if (!userStr) return null;
-    
+
     try {
       return JSON.parse(userStr);
     } catch {
@@ -234,5 +232,64 @@ export const departmentService = {
   }
 };
 
-// Export the configured API instance
+// Appointment Service
+export const appointmentService = {
+  async getAll(params?: { doctor_id?: string; patient_id?: string; date?: string; status?: string }) {
+    const response = await api.get('/appointments', { params });
+    return response.data;
+  },
+
+  async create(data: any) {
+    const response = await api.post('/appointments', data);
+    return response.data;
+  },
+
+  async update(id: string, data: any) {
+    const response = await api.put(`/appointments/${id}`, data);
+    return response.data;
+  },
+
+  async delete(id: string) {
+    const response = await api.delete(`/appointments/${id}`);
+    return response.data;
+  }
+};
+
+// Generic Service Factory
+const createGenericService = (resource: string) => ({
+  async getAll() {
+    const response = await api.get(`/${resource}`);
+    return response.data;
+  },
+
+  async create(data: any) {
+    const response = await api.post(`/${resource}`, data);
+    return response.data;
+  },
+
+  async update(id: string, data: any) {
+    const response = await api.put(`/${resource}/${id}`, data);
+    return response.data;
+  },
+
+  async delete(id: string) {
+    const response = await api.delete(`/${resource}/${id}`);
+    return response.data;
+  }
+});
+
+export const auditService = createGenericService('audit_logs');
+export const customService = createGenericService('custom_services');
+export const expenseService = createGenericService('daily_expenses');
+export const medicineService = createGenericService('medicines');
+export const emailService = createGenericService('email_logs');
+export const hospitalService = createGenericService('hospitals');
+
+export const userService = {
+  async getAll() {
+    const response = await api.get('/users');
+    return response.data;
+  }
+};
+
 export default api;

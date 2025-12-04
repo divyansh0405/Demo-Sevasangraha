@@ -1,53 +1,51 @@
-// Direct API service to bypass RLS issues for medical data tables
-const SUPABASE_URL = 'https://oghqwddhojnryovmfvzc.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9naHF3ZGRob2pucnlvdm1mdnpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMxMTQ1NDEsImV4cCI6MjA2ODY5MDU0MX0.NVvYQFtqIg8OV-vvkAhCNFC_uMC1SBJDSKcLHRjf5w0';
+// Medical Data API Service for Azure Backend
+// Replaces direct Supabase calls with backend API calls
 
-// Direct fetch function to bypass Supabase client issues
-async function fetchFromSupabase(endpoint: string, method: string = 'GET', data?: any) {
-  const url = `${SUPABASE_URL}/rest/v1/${endpoint}`;
+import axios from 'axios';
+
+// Helper functions
+const getHeaders = () => {
+  const token = localStorage.getItem('auth_token');
+  return { Authorization: `Bearer ${token}` };
+};
+
+const getBaseUrl = () => {
+  return import.meta.env.VITE_API_URL || 'http://localhost:3002';
+};
+
+// Generic fetch function for medical data
+async function fetchMedicalData(endpoint: string, method: string = 'GET', data?: any) {
+  const url = `${getBaseUrl()}${endpoint}`;
   
-  const headers: any = {
-    'apikey': SUPABASE_ANON_KEY,
-    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-    'Content-Type': 'application/json',
-    'Prefer': 'return=representation'
-  };
-
-  // For PATCH requests, we need to specify merge-duplicates
-  if (method === 'PATCH') {
-    headers['Prefer'] = 'return=representation,resolution=merge-duplicates';
-  }
-
-  const config: RequestInit = {
-    method,
-    headers,
-  };
-
-  if (data && (method === 'POST' || method === 'PATCH' || method === 'PUT')) {
-    config.body = JSON.stringify(data);
-  }
-
   try {
-    console.log(`🌐 Direct API call: ${method} ${url}`);
-    const response = await fetch(url, config);
+    console.log(`🌐 Medical API call: ${method} ${url}`);
     
-    console.log(`📡 Response status: ${response.status} ${response.statusText}`);
+    let response;
+    const config = { headers: getHeaders() };
     
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`❌ API Error: ${response.status} - ${errorText}`);
-      throw new Error(`API Error: ${response.status} - ${errorText}`);
+    switch (method) {
+      case 'GET':
+        response = await axios.get(url, config);
+        break;
+      case 'POST':
+        response = await axios.post(url, data, config);
+        break;
+      case 'PUT':
+      case 'PATCH':
+        response = await axios.put(url, data, config);
+        break;
+      case 'DELETE':
+        response = await axios.delete(url, config);
+        break;
+      default:
+        throw new Error(`Unsupported method: ${method}`);
     }
 
-    if (response.status === 204) {
-      return null; // No content
-    }
-
-    const result = await response.json();
-    console.log(`✅ API Success:`, result);
-    return result;
-  } catch (error) {
-    console.error(`💥 Fetch error:`, error);
+    console.log(`✅ Medical API Success:`, response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error(`💥 Medical API error:`, error);
+    console.error(`Error response:`, error.response?.data);
     throw error;
   }
 }
@@ -57,20 +55,9 @@ async function upsertMedicalData(tableName: string, data: any, patientId: string
   console.log(`💾 Upserting ${tableName} data:`, data);
   
   try {
-    // First check if record exists
-    const existing = await fetchFromSupabase(`${tableName}?patient_id=eq.${patientId}`);
-    
-    if (existing && existing.length > 0) {
-      // Update existing record
-      console.log(`🔄 Updating existing ${tableName} data for patient: ${patientId}`);
-      const result = await fetchFromSupabase(`${tableName}?patient_id=eq.${patientId}`, 'PATCH', data);
-      return result?.[0] || result;
-    } else {
-      // Insert new record
-      console.log(`➕ Inserting new ${tableName} data for patient: ${patientId}`);
-      const result = await fetchFromSupabase(tableName, 'POST', data);
-      return result?.[0] || result;
-    }
+    // Backend handles upsert logic
+    const result = await fetchMedicalData(`/api/medical/${tableName}/${patientId}`, 'PUT', data);
+    return result;
   } catch (error) {
     console.error(`Error upserting ${tableName} data:`, error);
     throw error;
@@ -81,101 +68,123 @@ async function upsertMedicalData(tableName: string, data: any, patientId: string
 export const getMedicalHighRiskData = async (patientId: string) => {
   try {
     console.log(`🔍 Getting high risk data for patient: ${patientId}`);
-    const data = await fetchFromSupabase(`medical_high_risk_data?patient_id=eq.${patientId}`);
-    return data?.[0] || null;
-  } catch (error) {
+    const data = await fetchMedicalData(`/api/medical/high-risk/${patientId}`, 'GET');
+    return data || null;
+  } catch (error: any) {
     console.error('Error getting high risk data:', error);
+    // Return null if not found (404)
+    if (error.response?.status === 404) {
+      return null;
+    }
     return null;
   }
 };
 
 export const saveMedicalHighRiskData = async (data: any) => {
-  return await upsertMedicalData('medical_high_risk_data', data, data.patient_id);
+  return await upsertMedicalData('high-risk', data, data.patient_id);
 };
 
 export const getMedicalExaminationData = async (patientId: string) => {
   try {
     console.log(`🔍 Getting examination data for patient: ${patientId}`);
-    const data = await fetchFromSupabase(`medical_examination_data?patient_id=eq.${patientId}`);
-    return data?.[0] || null;
-  } catch (error) {
+    const data = await fetchMedicalData(`/api/medical/examination/${patientId}`, 'GET');
+    return data || null;
+  } catch (error: any) {
     console.error('Error getting examination data:', error);
+    if (error.response?.status === 404) {
+      return null;
+    }
     return null;
   }
 };
 
 export const saveMedicalExaminationData = async (data: any) => {
-  return await upsertMedicalData('medical_examination_data', data, data.patient_id);
+  return await upsertMedicalData('examination', data, data.patient_id);
 };
 
 export const getMedicalInvestigationData = async (patientId: string) => {
   try {
     console.log(`🔍 Getting investigation data for patient: ${patientId}`);
-    const data = await fetchFromSupabase(`medical_investigation_data?patient_id=eq.${patientId}`);
-    return data?.[0] || null;
-  } catch (error) {
+    const data = await fetchMedicalData(`/api/medical/investigation/${patientId}`, 'GET');
+    return data || null;
+  } catch (error: any) {
     console.error('Error getting investigation data:', error);
+    if (error.response?.status === 404) {
+      return null;
+    }
     return null;
   }
 };
 
 export const saveMedicalInvestigationData = async (data: any) => {
-  return await upsertMedicalData('medical_investigation_data', data, data.patient_id);
+  return await upsertMedicalData('investigation', data, data.patient_id);
 };
 
 export const getMedicalDiagnosisData = async (patientId: string) => {
   try {
     console.log(`🔍 Getting diagnosis data for patient: ${patientId}`);
-    const data = await fetchFromSupabase(`medical_diagnosis_data?patient_id=eq.${patientId}`);
-    return data?.[0] || null;
-  } catch (error) {
+    const data = await fetchMedicalData(`/api/medical/diagnosis/${patientId}`, 'GET');
+    return data || null;
+  } catch (error: any) {
     console.error('Error getting diagnosis data:', error);
+    if (error.response?.status === 404) {
+      return null;
+    }
     return null;
   }
 };
 
 export const saveMedicalDiagnosisData = async (data: any) => {
-  return await upsertMedicalData('medical_diagnosis_data', data, data.patient_id);
+  return await upsertMedicalData('diagnosis', data, data.patient_id);
 };
 
 export const getMedicalPrescriptionData = async (patientId: string) => {
   try {
     console.log(`🔍 Getting prescription data for patient: ${patientId}`);
-    const data = await fetchFromSupabase(`medical_prescription_data?patient_id=eq.${patientId}`);
-    return data?.[0] || null;
-  } catch (error) {
+    const data = await fetchMedicalData(`/api/medical/prescription/${patientId}`, 'GET');
+    return data || null;
+  } catch (error: any) {
     console.error('Error getting prescription data:', error);
+    if (error.response?.status === 404) {
+      return null;
+    }
     return null;
   }
 };
 
 export const saveMedicalPrescriptionData = async (data: any) => {
-  return await upsertMedicalData('medical_prescription_data', data, data.patient_id);
+  return await upsertMedicalData('prescription', data, data.patient_id);
 };
 
 export const getMedicalRecordSummaryData = async (patientId: string) => {
   try {
     console.log(`🔍 Getting record summary for patient: ${patientId}`);
-    const data = await fetchFromSupabase(`medical_record_summary_data?patient_id=eq.${patientId}`);
-    return data?.[0] || null;
-  } catch (error) {
+    const data = await fetchMedicalData(`/api/medical/record-summary/${patientId}`, 'GET');
+    return data || null;
+  } catch (error: any) {
     console.error('Error getting record summary:', error);
+    if (error.response?.status === 404) {
+      return null;
+    }
     return null;
   }
 };
 
 export const saveMedicalRecordSummaryData = async (data: any) => {
-  return await upsertMedicalData('medical_record_summary_data', data, data.patient_id);
+  return await upsertMedicalData('record-summary', data, data.patient_id);
 };
 
 // Chief Complaints functions (different table structure)
 export const getPatientChiefComplaintsData = async (patientId: string) => {
   try {
     console.log(`🔍 Getting chief complaints for patient: ${patientId}`);
-    const data = await fetchFromSupabase(`patient_chief_complaints?patient_id=eq.${patientId}&order=created_at.desc`);
+    const data = await fetchMedicalData(`/api/medical/chief-complaints/${patientId}`, 'GET');
     return data || [];
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error getting chief complaints:', error);
+    if (error.response?.status === 404) {
+      return [];
+    }
     return [];
   }
 };
@@ -184,22 +193,11 @@ export const savePatientChiefComplaintsData = async (patientId: string, complain
   try {
     console.log(`💾 Saving chief complaints for patient: ${patientId}`, complaintsArray);
     
-    // First delete existing complaints for this patient
-    await fetchFromSupabase(`patient_chief_complaints?patient_id=eq.${patientId}`, 'DELETE');
+    const result = await fetchMedicalData(`/api/medical/chief-complaints/${patientId}`, 'PUT', {
+      complaints: complaintsArray
+    });
     
-    // Then insert new complaints
-    if (complaintsArray.length > 0) {
-      const complaintsToInsert = complaintsArray.map(complaint => ({
-        ...complaint,
-        patient_id: patientId,
-        medical_record_id: crypto.randomUUID() // Generate UUID for medical_record_id
-      }));
-      
-      const result = await fetchFromSupabase('patient_chief_complaints', 'POST', complaintsToInsert);
-      return result;
-    }
-    
-    return [];
+    return result;
   } catch (error) {
     console.error('Error saving chief complaints:', error);
     throw error;
@@ -227,7 +225,7 @@ export const getAllMedicalData = async (patientId: string) => {
       getMedicalRecordSummaryData(patientId)
     ]);
 
-    return {
+    const result = {
       highRisk: highRisk.status === 'fulfilled' ? highRisk.value : null,
       examination: examination.status === 'fulfilled' ? examination.value : null,
       investigation: investigation.status === 'fulfilled' ? investigation.value : null,
@@ -235,6 +233,9 @@ export const getAllMedicalData = async (patientId: string) => {
       prescription: prescription.status === 'fulfilled' ? prescription.value : null,
       recordSummary: recordSummary.status === 'fulfilled' ? recordSummary.value : null
     };
+
+    console.log(`✅ Retrieved all medical data for patient: ${patientId}`);
+    return result;
   } catch (error) {
     console.error('Error getting all medical data:', error);
     return {

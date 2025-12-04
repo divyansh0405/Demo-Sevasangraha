@@ -36,7 +36,7 @@ class AuthService {
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     try {
       logger.log('🔧 [AuthService] Starting login process for email:', credentials.email);
-      
+
       // Use dataService for login
       const user = await dataService.login(credentials.email, credentials.password);
 
@@ -105,9 +105,9 @@ class AuthService {
   async getCurrentUser(): Promise<AuthUser | null> {
     try {
       logger.log('🔧 [AuthService] Getting current user session...');
-      
+
       const user = await dataService.getCurrentUser();
-      
+
       if (!user) {
         logger.log('🔧 [AuthService] No user found');
         return null;
@@ -165,7 +165,7 @@ class AuthService {
     return {
       data: {
         subscription: {
-          unsubscribe: () => {},
+          unsubscribe: () => { },
         },
       },
     };
@@ -176,9 +176,10 @@ class AuthService {
    */
   hasRole(user: AuthUser | null, roles: string | string[]): boolean {
     if (!user) return false;
-    
+
     const roleArray = Array.isArray(roles) ? roles : [roles];
-    return roleArray.includes(user.role);
+    // Case-insensitive check
+    return roleArray.some(role => role.toLowerCase() === user.role.toLowerCase());
   }
 
   /**
@@ -186,20 +187,20 @@ class AuthService {
    */
   isAdmin(user: AuthUser | null): boolean {
     if (!user) return false;
-    
+
     // Force admin access for specific users
     if (user.email === 'admin@valant.com' || user.email === 'meenal@valant.com') {
       return true;
     }
-    
-    return this.hasRole(user, ['admin', 'ADMIN']);
+
+    return this.hasRole(user, 'admin');
   }
 
   /**
    * Check if user is doctor
    */
   isDoctor(user: AuthUser | null): boolean {
-    return this.hasRole(user, ['doctor', 'DOCTOR']);
+    return this.hasRole(user, 'doctor');
   }
 
   /**
@@ -246,7 +247,19 @@ class AuthService {
           'system_settings',
           'full_access',
         ];
-      
+
+      case 'hr':
+      case 'hrm':
+        return [
+          ...basePermissions,
+          'read_all_users',
+          'write_all_users',
+          'manage_users',
+          'read_dashboard',
+          'access_operations',
+          'system_settings'
+        ];
+
       case 'frontdesk':
         return [
           ...basePermissions,
@@ -261,7 +274,7 @@ class AuthService {
           // Frontdesk has NO edit access to patient list
           // Frontdesk now HAS access to operations section
         ];
-      
+
       case 'doctor':
         return [
           ...basePermissions,
@@ -277,7 +290,7 @@ class AuthService {
           'read_dashboard',
           'access_operations',
         ];
-      
+
       case 'nurse':
         return [
           ...basePermissions,
@@ -290,7 +303,7 @@ class AuthService {
           'read_dashboard',
           'access_operations',
         ];
-      
+
       case 'accountant':
         return [
           ...basePermissions,
@@ -302,16 +315,11 @@ class AuthService {
           'read_dashboard',
           'create_expenses',
         ];
-      
+
       // Legacy support and variations
-      case 'ADMIN':
-      case 'DOCTOR':
-      case 'FRONTDESK':
       case 'front_desk':
       case 'receptionist':
       case 'staff':
-      case 'STAFF':
-      case 'NURSE':
         return [
           ...basePermissions,
           'read_patients',

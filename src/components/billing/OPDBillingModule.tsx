@@ -74,8 +74,8 @@ const OPDBillingModule: React.FC = () => {
     loadData();
 
     // Subscribe to billing service updates
-    const unsubscribe = BillingService.subscribe(() => {
-      const updatedBills = BillingService.getOPDBills();
+    const unsubscribe = BillingService.subscribe(async () => {
+      const updatedBills = await BillingService.getOPDBills();
       setOpdBills(updatedBills);
     });
 
@@ -95,7 +95,7 @@ const OPDBillingModule: React.FC = () => {
       logger.log('👨‍⚕️ Loaded doctors for OPD billing:', actualDoctors.length);
 
       // Load existing bills from BillingService
-      const existingBills = BillingService.getOPDBills();
+      const existingBills = await BillingService.getOPDBills();
       logger.log('💰 Loaded existing OPD bills:', existingBills.length);
 
       setPatients(actualPatients);

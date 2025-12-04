@@ -1,4 +1,4 @@
-import { supabase } from '../config/supabaseNew';
+import axios from 'axios';
 import type { PatientWithRelations } from '../config/supabaseNew';
 
 export interface BedData {
@@ -37,51 +37,30 @@ export interface IPDCounter {
 }
 
 class BedService {
+  private getHeaders() {
+    const token = localStorage.getItem('auth_token');
+    return { Authorization: `Bearer ${token}` };
+  }
+
+  private getBaseUrl() {
+    return import.meta.env.VITE_API_URL || 'http://localhost:3002';
+  }
+
   // Get all beds with patient information
   async getAllBeds(): Promise<BedData[]> {
     try {
       console.log('🔍 BedService: Starting getAllBeds query...');
       
-      const { data, error } = await supabase
-        .from('beds')
-        .select(`
-          *,
-          patients (
-            id,
-            patient_id,
-            first_name,
-            last_name,
-            phone,
-            age,
-            gender,
-            address,
-            assigned_doctor,
-            assigned_department,
-            assigned_doctors,
-            consultation_fees,
-            admissions:patient_admissions(*)
-          )
-        `)
-        .order('bed_number');
+      const response = await axios.get(`${this.getBaseUrl()}/api/beds`, {
+        headers: this.getHeaders()
+      });
 
       console.log('🔍 BedService: Query completed');
-      console.log('🔍 BedService: Error?', error);
-      console.log('🔍 BedService: Data?', data?.length, 'rows');
+      console.log('🔍 BedService: Data?', response.data?.length, 'rows');
 
-      if (error) {
-        console.error('❌ BedService: Error fetching beds:', error);
-        throw error;
-      }
-
-      return data || [];
+      return response.data || [];
     } catch (error) {
       console.error('❌ BedService.getAllBeds failed:', error);
-      console.error('❌ BedService error details:', {
-        message: error?.message,
-        code: error?.code,
-        details: error?.details,
-        hint: error?.hint
-      });
       throw error;
     }
   }
@@ -89,52 +68,26 @@ class BedService {
   // Get a specific bed by ID
   async getBedById(bedId: string): Promise<BedData | null> {
     try {
-      const { data, error } = await supabase
-        .from('beds')
-        .select(`
-          *,
-          patients (
-            id,
-            patient_id,
-            first_name,
-            last_name,
-            phone,
-            age,
-            gender,
-            address,
-            assigned_doctor,
-            assigned_department,
-            assigned_doctors,
-            consultation_fees
-          )
-        `)
-        .eq('id', bedId)
-        .single();
+      const response = await axios.get(`${this.getBaseUrl()}/api/beds/${bedId}`, {
+        headers: this.getHeaders()
+      });
 
-      if (error) {
-        console.error('Error fetching bed:', error);
-        throw error;
-      }
-
-      return data;
+      return response.data;
     } catch (error) {
       console.error('BedService.getBedById failed:', error);
       return null;
     }
   }
 
-  // Generate next IPD number using database function
+  // Generate next IPD number using backend API
   async getNextIPDNumber(): Promise<string> {
     try {
-      const { data, error } = await supabase.rpc('get_next_ipd_number');
+      const response = await axios.get(`${this.getBaseUrl()}/api/ipd/next-number`, {
+        headers: this.getHeaders()
+      });
 
-      if (error) {
-        console.error('Error generating IPD number:', error);
-        throw error;
-      }
-
-      console.log('🏥 Generated IPD Number:', data);
-      return data;
+      console.log('🏥 Generated IPD Number:', response.data);
+      return response.data.ipd_number || response.data;
     } catch (error) {
       console.error('BedService.getNextIPDNumber failed:', error);
       throw error;
@@ -153,98 +106,49 @@ class BedService {
       
       const admissionDateToUse = admissionDate || new Date().toISOString();
 
-      // Get bed details first to extract bed number
-      const { data: bedData } = await supabase
-        .from('beds')
-        .select('bed_number, room_type, hospital_id')
-        .eq('id', bedId)
-        .single();
+      // Get bed details first
+      const bedData = await this.getBedById(bedId);
 
-      // First, create admission record in patient_admissions table
-      const { data: admissionData, error: admissionError } = await supabase
-        .from('patient_admissions')
-        .insert({
+      // Create admission record
+      const admissionResponse = await axios.post(
+        `${this.getBaseUrl()}/api/admissions`,
+        {
           patient_id: patient.id,
-          bed_id: bedId, // CRITICAL: Set bed_id so we can retrieve bed data after discharge
+          bed_id: bedId,
           bed_number: bedData?.bed_number ? parseInt(bedData.bed_number) : 1,
           room_type: bedData?.room_type || 'GENERAL',
           department: patient.assigned_department || 'GENERAL',
           admission_date: admissionDateToUse,
-          status: 'ADMITTED',
-          hospital_id: bedData?.hospital_id || 'b8a8c5e2-5c4d-4a8b-9e6f-3d2c1a0b9c8d'
-          // Removed treating_doctor and ipd_number - columns don't exist in patient_admissions table
-        })
-        .select()
-        .single();
+          status: 'ADMITTED'
+        },
+        { headers: this.getHeaders() }
+      );
 
-      if (admissionError) {
-        console.error('❌ Error creating admission record:', admissionError);
-        throw new Error(`Failed to create admission record: ${admissionError.message}`);
-      }
+      console.log('✅ Admission record created:', admissionResponse.data);
 
-      console.log('✅ Admission record created:', admissionData);
-
-      // Update bed with patient information and admission ID
-      const { data, error } = await supabase
-        .from('beds')
-        .update({
+      // Update bed with patient information
+      const response = await axios.put(
+        `${this.getBaseUrl()}/api/beds/${bedId}`,
+        {
           status: 'occupied',
           patient_id: patient.id,
           ipd_number: ipdNumber,
           admission_date: admissionDateToUse,
-          admission_id: admissionData.id, // Link to admission record
+          admission_id: admissionResponse.data.id,
           tat_status: 'idle',
-          tat_remaining_seconds: 1800, // 30 minutes
+          tat_remaining_seconds: 1800,
           consent_form_submitted: false,
           clinical_record_submitted: false,
           progress_sheet_submitted: false,
           nurses_orders_submitted: false
-        })
-        .eq('id', bedId)
-        .select(`
-          *,
-          patients (
-            id,
-            patient_id,
-            first_name,
-            last_name,
-            phone,
-            age,
-            gender,
-            address,
-            assigned_doctor,
-            assigned_department,
-            assigned_doctors,
-            consultation_fees
-          )
-        `)
-        .single();
-
-      if (error) {
-        console.error('❌ Error admitting patient to bed:');
-        console.log(error); // Use console.log to fully expand the object
-        console.error('❌ Error message:', error?.message);
-        console.error('❌ Error code:', error?.code);
-        console.error('❌ Error details:', error?.details);
-        console.error('❌ Error hint:', error?.hint);
-        console.error('❌ Full error object:', JSON.stringify(error, null, 2));
-        console.error('❌ Attempted update data:');
-        console.log({
-          bedId,
-          patientId: patient.id,
-          ipdNumber,
-          admissionDateToUse,
-          status: 'occupied'
-        });
-        throw error;
-      }
+        },
+        { headers: this.getHeaders() }
+      );
 
       console.log('✅ Patient admitted successfully. IPD Number:', ipdNumber);
-      return data;
+      return response.data;
     } catch (error) {
-      console.error('❌ BedService.admitPatientToBed failed:');
-      console.log(error); // Use console.log to expand the full error
-      console.error('❌ Catch block - Full error:', JSON.stringify(error, null, 2));
+      console.error('❌ BedService.admitPatientToBed failed:', error);
       throw error;
     }
   }
@@ -252,9 +156,9 @@ class BedService {
   // Discharge patient from bed
   async dischargePatientFromBed(bedId: string): Promise<BedData> {
     try {
-      const { data, error } = await supabase
-        .from('beds')
-        .update({
+      const response = await axios.put(
+        `${this.getBaseUrl()}/api/beds/${bedId}`,
+        {
           status: 'vacant',
           patient_id: null,
           ipd_number: null,
@@ -273,18 +177,12 @@ class BedService {
           nurses_orders_submitted: false,
           ipd_consents_data: null,
           updated_at: new Date().toISOString()
-        })
-        .eq('id', bedId)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error discharging patient from bed:', error);
-        throw error;
-      }
+        },
+        { headers: this.getHeaders() }
+      );
 
       console.log('✅ Patient discharged successfully');
-      return data;
+      return response.data;
     } catch (error) {
       console.error('BedService.dischargePatientFromBed failed:', error);
       throw error;
@@ -294,93 +192,46 @@ class BedService {
   // Update bed data (for forms, TAT, etc.)
   async updateBed(bedId: string, updates: Partial<BedData>): Promise<BedData> {
     try {
-      const { data, error } = await supabase
-        .from('beds')
-        .update({
+      const response = await axios.put(
+        `${this.getBaseUrl()}/api/beds/${bedId}`,
+        {
           ...updates,
           updated_at: new Date().toISOString()
-        })
-        .eq('id', bedId)
-        .select(`
-          *,
-          patients (
-            id,
-            patient_id,
-            first_name,
-            last_name,
-            phone,
-            age,
-            gender,
-            address,
-            assigned_doctor,
-            assigned_department,
-            assigned_doctors,
-            consultation_fees
-          )
-        `)
-        .single();
+        },
+        { headers: this.getHeaders() }
+      );
 
-      if (error) {
-        console.error('Error updating bed:', error);
-        throw error;
-      }
-
-      return data;
+      return response.data;
     } catch (error) {
       console.error('BedService.updateBed failed:', error);
       throw error;
     }
   }
 
-  // Subscribe to real-time bed changes
+  // Subscribe to real-time bed changes (DISABLED for REST API)
   subscribeToBedsChanges(callback: (payload: any) => void) {
-    const subscription = supabase
-      .channel('beds-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'beds'
-        },
-        callback
-      )
-      .subscribe();
-
-    console.log('🔄 Subscribed to real-time bed changes');
-    return subscription;
+    console.warn('⚠️ Real-time subscriptions not supported with REST API');
+    console.log('💡 Consider implementing polling or WebSocket connections');
+    
+    // Return a dummy subscription object
+    return {
+      unsubscribe: () => console.log('Dummy subscription unsubscribed')
+    };
   }
 
-  // Unsubscribe from real-time changes
+  // Unsubscribe from real-time changes (DISABLED for REST API)
   unsubscribeFromBedsChanges(subscription: any) {
-    if (subscription) {
-      supabase.removeChannel(subscription);
-      console.log('❌ Unsubscribed from real-time bed changes');
-    }
+    console.log('❌ Real-time subscriptions not active');
   }
 
   // Get today's IPD stats
   async getIPDStats(): Promise<{ date: string; count: number; lastIPD: string }> {
     try {
-      const today = new Date();
-      const dateKey = today.getFullYear().toString() + 
-                     (today.getMonth() + 1).toString().padStart(2, '0') + 
-                     today.getDate().toString().padStart(2, '0');
+      const response = await axios.get(`${this.getBaseUrl()}/api/ipd/stats`, {
+        headers: this.getHeaders()
+      });
 
-      const { data, error } = await supabase
-        .from('ipd_counters')
-        .select('counter')
-        .eq('date_key', dateKey)
-        .single();
-
-      const count = data?.counter || 0;
-      const lastIPD = count > 0 ? `IPD-${dateKey}-${count.toString().padStart(3, '0')}` : 'None';
-
-      return {
-        date: dateKey,
-        count,
-        lastIPD
-      };
+      return response.data;
     } catch (error) {
       console.error('BedService.getIPDStats failed:', error);
       return {
@@ -391,10 +242,10 @@ class BedService {
     }
   }
 
-  // Initialize beds if they don't exist - DISABLED TO PREVENT DUPLICATES
+  // Initialize beds if they don't exist - DISABLED
   async initializeBeds(): Promise<void> {
     console.log('🚫 Bed initialization DISABLED - use main database only');
-    return; // Completely disabled to prevent any local bed creation
+    return;
   }
 }
 

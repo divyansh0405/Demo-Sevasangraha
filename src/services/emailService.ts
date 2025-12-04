@@ -1,4 +1,4 @@
-import { supabase } from '../config/supabase';
+import axios from 'axios';
 
 interface EmailConfig {
   apiKey: string;
@@ -33,6 +33,15 @@ export class EmailService {
     enabled: import.meta.env.VITE_EMAIL_ENABLED === 'true',
   };
 
+  private static getHeaders() {
+    const token = localStorage.getItem('auth_token');
+    return { Authorization: `Bearer ${token}` };
+  }
+
+  private static getBaseUrl() {
+    return import.meta.env.VITE_API_URL || 'http://localhost:3002';
+  }
+
   /**
    * Check if email service is properly configured
    */
@@ -41,7 +50,7 @@ export class EmailService {
   }
 
   /**
-   * Send email using Supabase Edge Function (bypasses CORS)
+   * Send email via backend API
    */
   private static async sendViaResend(
     to: string,
@@ -50,10 +59,6 @@ export class EmailService {
     attachments?: EmailAttachment[]
   ): Promise<{ success: boolean; error?: string; emailId?: string }> {
     try {
-      // Use Supabase Edge Function to avoid CORS issues
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
       const payload: any = {
         to,
         subject,
@@ -70,46 +75,25 @@ export class EmailService {
         }));
       }
 
-      console.log('📤 Sending request to Edge Function:', `${supabaseUrl}/functions/v1/send-email`);
+      console.log('📤 Sending email via backend API');
       console.log('📤 Payload:', { to, subject, hasAttachments: !!attachments?.length });
 
-      const response = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
+      const response = await axios.post(
+        `${this.getBaseUrl()}/api/email/send`,
+        payload,
+        { headers: this.getHeaders() }
+      );
 
-      console.log('📥 Response status:', response.status, response.statusText);
-
-      let data;
-      try {
-        data = await response.json();
-        console.log('📥 Response data:', data);
-      } catch (parseError) {
-        console.error('❌ Failed to parse response as JSON:', parseError);
-        throw new Error(`Edge Function returned status ${response.status} with non-JSON response`);
-      }
-
-      if (!response.ok || !data.success) {
-        console.error('❌ Email sending error - Status:', response.status);
-        console.error('❌ Email sending error - Data:', data);
-        const errorMsg = data.error || data.message || `Edge Function failed with status ${response.status}`;
-        throw new Error(errorMsg);
-      }
-
-      console.log('✅ Email sent successfully:', data);
+      console.log('✅ Email sent successfully:', response.data);
       return {
         success: true,
-        emailId: data.data?.id,
+        emailId: response.data?.id,
       };
     } catch (error: any) {
       console.error('❌ Email sending error:', error);
       return {
         success: false,
-        error: error.message,
+        error: error.response?.data?.error || error.message,
       };
     }
   }
@@ -119,18 +103,22 @@ export class EmailService {
    */
   private static async logEmail(log: EmailLog): Promise<void> {
     try {
-      await supabase.from('email_logs').insert([{
-        patient_id: log.patient_id,
-        recipient_email: log.recipient_email,
-        subject: log.subject,
-        body: log.body,
-        attachments: log.attachments,
-        status: log.status,
-        error_message: log.error_message,
-        email_type: log.email_type,
-        provider: log.provider,
-        sent_at: new Date().toISOString(),
-      }]);
+      await axios.post(
+        `${this.getBaseUrl()}/api/email-logs`,
+        {
+          patient_id: log.patient_id,
+          recipient_email: log.recipient_email,
+          subject: log.subject,
+          body: log.body,
+          attachments: log.attachments,
+          status: log.status,
+          error_message: log.error_message,
+          email_type: log.email_type,
+          provider: log.provider,
+          sent_at: new Date().toISOString(),
+        },
+        { headers: this.getHeaders() }
+      );
     } catch (error) {
       console.error('Failed to log email:', error);
       // Don't throw - logging failure shouldn't break email sending
@@ -358,14 +346,15 @@ export class EmailService {
    */
   static async getEmailLogs(patientId: string) {
     try {
-      const { data, error } = await supabase
-        .from('email_logs')
-        .select('*')
-        .eq('patient_id', patientId)
-        .order('sent_at', { ascending: false });
+      const response = await axios.get(
+        `${this.getBaseUrl()}/api/email-logs`,
+        {
+          headers: this.getHeaders(),
+          params: { patient_id: patientId }
+        }
+      );
 
-      if (error) throw error;
-      return data;
+      return response.data;
     } catch (error) {
       console.error('Failed to fetch email logs:', error);
       return [];

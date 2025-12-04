@@ -1,4 +1,4 @@
-import { supabase } from '../config/supabase';
+import axios from 'axios';
 import type { Patient } from '../types/index';
 
 export interface CreatePatientData {
@@ -44,23 +44,16 @@ export class PatientService {
         ])
       );
 
+      // Get API URL and auth token
+      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3002';
+      const token = localStorage.getItem('auth_token');
 
-      // Insert into Supabase
-      const { data, error } = await supabase
-        .from('patients')
-        .insert([finalData])
-        .select()
-        .single();
+      // Call backend API
+      const response = await axios.post(`${baseUrl}/api/patients`, finalData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
 
-      if (error) {
-        throw new Error(`Database error: ${error.message}`);
-      }
-
-      if (!data) {
-        throw new Error('No data returned from patient creation');
-      }
-
-      return data as Patient;
+      return response.data as Patient;
 
     } catch (error: any) {
       
@@ -71,7 +64,7 @@ export class PatientService {
         throw new Error('Missing required patient information');
       } else if (error.message?.includes('foreign key')) {
         throw new Error('Invalid reference data provided');
-      } else if (error.message?.includes('permission denied') || error.message?.includes('RLS')) {
+      } else if (error.response?.status === 401 || error.response?.status === 403) {
         throw new Error('Database permission error - please check your login status');
       } else {
         throw new Error(`Failed to create patient: ${error.message}`);
@@ -84,43 +77,30 @@ export class PatientService {
    */
   static async testConnection(): Promise<{ success: boolean; message: string; details?: any }> {
     try {
+      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3002';
+      const token = localStorage.getItem('auth_token');
 
-      // Test basic read access
-      const { data, error } = await supabase
-        .from('patients')
-        .select('count')
-        .limit(1);
-
-      if (error) {
+      if (!token) {
         return {
           success: false,
-          message: `Database access failed: ${error.message}`,
-          details: error
+          message: 'No authentication token found'
         };
       }
 
-      // Test authentication
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError) {
-        return {
-          success: false,
-          message: `Authentication check failed: ${authError.message}`,
-          details: authError
-        };
-      }
+      // Test backend API connection
+      const response = await axios.get(`${baseUrl}/api/patients`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { limit: 1 }
+      });
 
-      if (!user) {
-        return {
-          success: false,
-          message: 'No authenticated user found'
-        };
-      }
+      // Get current user
+      const userStr = localStorage.getItem('auth_user');
+      const user = userStr ? JSON.parse(userStr) : null;
 
       return {
         success: true,
-        message: `Connection successful. User: ${user.email}`,
-        details: { user: user.email, hasTableAccess: true }
+        message: `Connection successful. User: ${user?.email || 'Unknown'}`,
+        details: { user: user?.email, hasTableAccess: true }
       };
 
     } catch (error: any) {

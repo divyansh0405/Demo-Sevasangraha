@@ -31,7 +31,7 @@ const IPDBillingModule: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PAID' | 'PENDING' | 'CANCELLED'>('ALL');
-  
+
   const [formData, setFormData] = useState<IPDBillFormData>({
     patientId: '',
     admissionDate: '',
@@ -89,78 +89,15 @@ const IPDBillingModule: React.FC = () => {
     'Water Bed Charges',
     'Ventilator Charges',
     'C Pap Charges',
-    'Bi Pap Charges',
-    'Syringe Pump Charges',
-    'Other',
-    'PAC Charges'
-  ];
-
-  useEffect(() => {
-    loadData();
-    
-    // Subscribe to billing service updates
-    const unsubscribe = BillingService.subscribe(() => {
-      const updatedBills = BillingService.getIPDBills();
-      setIpdBills(updatedBills);
-    });
-    
-    return unsubscribe;
-  }, []);
-
-  useEffect(() => {
-    // Initialize services when component mounts
-    if (formData.services.length === 0) {
-      const initialServices = ipdServices.map(service => ({
-        name: service,
-        selected: false,
-        amount: 0
-      }));
-      logger.log('🔧 Debug - Initializing services:', initialServices.slice(0, 3));
-      setFormData(prev => ({ ...prev, services: initialServices }));
-    }
-  }, []);
-
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      
-      // Load actual patients from HospitalService
-      const actualPatients = await HospitalService.getPatients(50000, true, true);
-      logger.log('🏥 Loaded patients for IPD billing:', actualPatients.length);
-
-      // Filter patients who have IPD status or admissions
-      const ipdPatients = actualPatients.filter(patient => 
-        patient.ipd_status === 'ADMITTED' || 
-        patient.ipd_status === 'DISCHARGED' ||
-        (patient.admissions && patient.admissions.length > 0)
-      );
-
-      logger.log('🛏️ Patients with IPD history:', ipdPatients.length);
-
-      // Load existing bills from BillingService
-      const existingBills = BillingService.getIPDBills();
-      logger.log('💰 Loaded existing IPD bills:', existingBills.length);
-
-      setPatients(actualPatients); // Show all patients, not just IPD ones
-      setIpdBills(existingBills);
-      
-    } catch (error: any) {
-      logger.error('Failed to load IPD billing data:', error);
-      toast.error('Failed to load data: ' + error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const filteredPatients = patients.filter(patient =>
-    `${patient.first_name} ${patient.last_name}`.toLowerCase().includes(patientSearchTerm.toLowerCase()) ||
-    patient.patient_id.toLowerCase().includes(patientSearchTerm.toLowerCase()) ||
-    patient.phone.includes(patientSearchTerm)
-  );
+      `${patient.first_name} ${patient.last_name}`.toLowerCase().includes(patientSearchTerm.toLowerCase()) ||
+      patient.patient_id.toLowerCase().includes(patientSearchTerm.toLowerCase()) ||
+      patient.phone.includes(patientSearchTerm)
+    );
 
   const filteredBills = ipdBills.filter(bill => {
     const matchesSearch = bill.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         bill.billId.toLowerCase().includes(searchTerm.toLowerCase());
+      bill.billId.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'ALL' || bill.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -204,7 +141,7 @@ const IPDBillingModule: React.FC = () => {
       days: 0,
       totalCharge: 0
     };
-    
+
     setFormData(prev => ({
       ...prev,
       staySegments: [...prev.staySegments, newSegment]
@@ -246,27 +183,27 @@ const IPDBillingModule: React.FC = () => {
     setFormData(prev => ({ ...prev, patientId: patient.id }));
     setPatientSearchTerm(`${patient.first_name} ${patient.last_name} (${patient.patient_id})`);
     setShowPatientDropdown(false);
-    
+
     // Auto-fill admission data if patient has admission history
     if (patient.admissions && patient.admissions.length > 0) {
       const latestAdmission = patient.admissions
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
-      
+
       if (latestAdmission) {
-        const admissionDate = latestAdmission.admission_date ? 
+        const admissionDate = latestAdmission.admission_date ?
           new Date(latestAdmission.admission_date).toISOString().split('T')[0] : '';
-        
+
         // For discharge date, use current date if patient is still admitted
         const dischargeDate = patient.ipd_status === 'DISCHARGED' && latestAdmission.updated_at ?
           new Date(latestAdmission.updated_at).toISOString().split('T')[0] :
           new Date().toISOString().split('T')[0];
-        
+
         setFormData(prev => ({
           ...prev,
           admissionDate,
           dischargeDate
         }));
-        
+
         // Auto-add a stay segment based on bed information
         if (latestAdmission.bed_number) {
           const autoSegment: StaySegment = {
@@ -280,15 +217,15 @@ const IPDBillingModule: React.FC = () => {
             days: calculateDays(admissionDate, dischargeDate),
             totalCharge: 0
           };
-          
+
           autoSegment.totalCharge = calculateSegmentTotal(autoSegment);
-          
+
           setFormData(prev => ({
             ...prev,
             staySegments: [autoSegment]
           }));
         }
-        
+
         toast.success(`Auto-filled admission data from latest admission (${admissionDate})`);
       }
     }
@@ -296,7 +233,7 @@ const IPDBillingModule: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.patientId || !formData.admissionDate || !formData.dischargeDate) {
       toast.error('Please fill in all required fields');
       return;
@@ -332,11 +269,11 @@ const IPDBillingModule: React.FC = () => {
 
       // Save to BillingService - this will automatically update all components
       BillingService.saveIPDBill(newBill);
-      
+
       toast.success(`IPD bill ${newBill.billId} created successfully!`);
       setShowCreateBill(false);
       resetForm();
-      
+
     } catch (error: any) {
       toast.error('Failed to create bill: ' + error.message);
     }
@@ -426,7 +363,7 @@ const IPDBillingModule: React.FC = () => {
         minute: '2-digit',
         hour12: true
       }),
-      
+
       hospital: {
         name: 'VALANT HOSPITAL',
         address: 'Madhuban, Siwan, Bihar',
@@ -435,7 +372,7 @@ const IPDBillingModule: React.FC = () => {
         registration: 'REG/2024/001',
         gst: 'GST123456789'
       },
-      
+
       patient: {
         id: patientDetails?.patient_id || bill.patientId.slice(-6).toUpperCase(),
         name: patientDetails ? `${patientDetails.first_name} ${patientDetails.last_name || ''}`.trim() : bill.patientName,
@@ -445,20 +382,20 @@ const IPDBillingModule: React.FC = () => {
         address: patientDetails?.address,
         bloodGroup: patientDetails?.blood_group
       },
-      
+
       medical: {
         admissionDate: new Date(bill.admissionDate).toLocaleDateString('en-IN'),
         dischargeDate: new Date(bill.dischargeDate).toLocaleDateString('en-IN'),
         stayDuration: Math.ceil((new Date(bill.dischargeDate).getTime() - new Date(bill.admissionDate).getTime()) / (1000 * 60 * 60 * 24))
       },
-      
+
       charges: [],
-      
+
       payments: [{
         mode: bill.paymentMode || 'CASH',
         amount: bill.grandTotal || bill.totalAmount || 0
       }],
-      
+
       totals: {
         subtotal: bill.grandTotal || bill.totalAmount || 0,
         discount: bill.discount || 0,
@@ -467,12 +404,12 @@ const IPDBillingModule: React.FC = () => {
         amountPaid: bill.grandTotal || bill.totalAmount || 0,
         balance: 0
       },
-      
+
       staff: {
         processedBy: 'IPD Billing',
         authorizedBy: 'Hospital Administrator'
       },
-      
+
       notes: bill.notes || '',
       isOriginal: true
     };
@@ -816,7 +753,7 @@ const IPDBillingModule: React.FC = () => {
     a.click();
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
-    
+
     toast.success(`Downloaded ${billId} as HTML file`);
   };
 
@@ -841,12 +778,12 @@ const IPDBillingModule: React.FC = () => {
   const generateIPDBillPrint = (bill: IPDBill): string => {
     const currentDate = new Date().toLocaleDateString('en-IN');
     const currentTime = new Date().toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
-      });
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
     const stayDuration = calculateDays(bill.admissionDate, bill.dischargeDate);
-    
+
     return `
       <!DOCTYPE html>
       <html>
@@ -1098,30 +1035,30 @@ const IPDBillingModule: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex space-x-2">
-                      <button 
+                      <button
                         onClick={() => handleEditIPDBill(bill.billId)}
-                        className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50" 
+                        className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
                         title="Edit IPD Bill"
                       >
                         <Edit className="h-4 w-4" />
                       </button>
-                      <button 
+                      <button
                         onClick={() => handlePrintIPDBill(bill.billId)}
-                        className="text-green-600 hover:text-green-900 p-1 rounded hover:bg-green-50" 
+                        className="text-green-600 hover:text-green-900 p-1 rounded hover:bg-green-50"
                         title="Print IPD Bill"
                       >
                         <Printer className="h-4 w-4" />
                       </button>
-                      <button 
+                      <button
                         onClick={() => handleDownloadIPDBill(bill.billId)}
-                        className="text-purple-600 hover:text-purple-900 p-1 rounded hover:bg-purple-50" 
+                        className="text-purple-600 hover:text-purple-900 p-1 rounded hover:bg-purple-50"
                         title="Download IPD Bill"
                       >
                         <Download className="h-4 w-4" />
                       </button>
-                      <button 
+                      <button
                         onClick={() => handleDeleteIPDBill(bill.billId)}
-                        className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50" 
+                        className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50"
                         title="Delete IPD Bill"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -1164,7 +1101,7 @@ const IPDBillingModule: React.FC = () => {
                     <User className="h-5 w-5 mr-2" />
                     Patient and Stay Information
                   </h4>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {/* Patient Selection */}
                     <div className="relative">

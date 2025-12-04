@@ -14,7 +14,6 @@ import NewIPDBillingModule from './billing/NewIPDBillingModule';
 import IPDSummaryModule from './billing/IPDSummaryModule';
 import CombinedBillingModule from './billing/CombinedBillingModule';
 import HospitalService from '../services/hospitalService';
-import { supabase } from '../config/supabaseNew';
 import { logger } from '../utils/logger';
 
 interface PatientBilling {
@@ -35,6 +34,10 @@ interface PatientDepositDetail {
   description: string;
   status: string;
   transaction_type: string;
+  transaction_reference?: string;
+  patient_id?: string;
+  patient?: any;
+  patients?: any;
 }
 
 interface BillingSummary {
@@ -197,65 +200,36 @@ const BillingSection: React.FC = () => {
       setSelectedPatient(patient);
       logger.log('🔍 Loading details for patient:', patient.patientName, 'ID:', patient.patientId);
 
-      // Load deposits for this patient with patient details (same as CombinedBillingModule)
-      const { data: depositsData, error: depositsError } = await supabase
-        .from('patient_transactions')
-        .select(`
-          id,
-          amount,
-          transaction_date,
-          created_at,
-          payment_mode,
-          description,
-          status,
-          transaction_type,
-          transaction_reference,
-          patient_id,
-          patients (
-            id,
-            patient_id,
-            first_name,
-            last_name,
-            phone,
-            age,
-            gender,
-            assigned_doctor,
-            patient_admissions (
-              admission_date,
-              discharge_date
-            )
-          )
-        `)
-        .eq('patient_id', patient.patientId)
-        .in('transaction_type', ['ADMISSION_FEE', 'DEPOSIT', 'ADVANCE_PAYMENT'])
-        .order('created_at', { ascending: false });
+      // Load ALL transactions for this patient via HospitalService
+      const allTransactions = await HospitalService.getTransactionsByPatient(patient.patientId);
 
-      if (depositsError) {
-        logger.error('❌ Error loading patient deposits:', depositsError);
-        toast.error('Failed to load patient deposits');
-        return;
-      }
+      logger.log('✅ Loaded transactions for patient:', allTransactions?.length || 0);
 
-      logger.log('✅ Loaded deposits for patient:', depositsData?.length || 0);
+      // Filter deposits (ADMISSION_FEE, DEPOSIT, ADVANCE_PAYMENT)
+      const depositsData = allTransactions.filter((t: any) =>
+        ['ADMISSION_FEE', 'DEPOSIT', 'ADVANCE_PAYMENT'].includes(t.transaction_type) &&
+        t.status !== 'CANCELLED' && t.status !== 'DELETED'
+      );
 
-      // Load IPD bills for this patient (SERVICE transactions including pending ones)
-      const { data: ipdBillsData, error: billsError } = await supabase
-        .from('patient_transactions')
-        .select('id, amount, transaction_date, created_at, payment_mode, description, status, transaction_type')
-        .eq('patient_id', patient.patientId)
-        .eq('transaction_type', 'SERVICE')
-        .neq('status', 'DELETED') // Include PENDING, COMPLETED, etc.
-        .order('created_at', { ascending: false });
+      // Filter IPD bills (SERVICE transactions)
+      const ipdBillsData = allTransactions.filter((t: any) =>
+        t.transaction_type === 'SERVICE' &&
+        t.status !== 'DELETED'
+      );
 
-      if (billsError) {
-        logger.error('❌ Error loading patient IPD bills:', billsError);
-        toast.error('Failed to load patient IPD bills');
-        return;
-      }
+      logger.log('✅ Deposits:', depositsData.length, 'IPD bills:', ipdBillsData.length);
 
-      logger.log('✅ Loaded IPD bills for patient:', ipdBillsData?.length || 0);
+      // Get patient details for receipt printing
+      const patientDetails = await HospitalService.getPatientById(patient.patientId);
 
-      setPatientDepositDetails(depositsData || []);
+      // Add patient details to each deposit for receipt printing
+      const depositsWithPatientData = depositsData.map((deposit: any) => ({
+        ...deposit,
+        patients: patientDetails,
+        patient: patientDetails
+      }));
+
+      setPatientDepositDetails(depositsWithPatientData || []);
       setPatientIPDBills(ipdBillsData || []);
       setShowPatientModal(true);
 
@@ -272,7 +246,7 @@ const BillingSection: React.FC = () => {
       return new Promise((resolve, reject) => {
         const img = new Image();
         img.crossOrigin = 'Anonymous';
-        img.onload = function() {
+        img.onload = function () {
           const canvas = document.createElement('canvas');
           canvas.width = img.width;
           canvas.height = img.height;
@@ -285,7 +259,7 @@ const BillingSection: React.FC = () => {
           const dataURL = canvas.toDataURL('image/png');
           resolve(dataURL);
         };
-        img.onerror = function() {
+        img.onerror = function () {
           resolve('');
         };
         img.src = '/Receipt2.png';
@@ -418,16 +392,8 @@ const BillingSection: React.FC = () => {
     try {
       logger.log('🗑️ Deleting deposit:', deposit.id);
 
-      const { error } = await supabase
-        .from('patient_transactions')
-        .delete()
-        .eq('id', deposit.id);
-
-      if (error) {
-        logger.error('❌ Error deleting deposit:', error);
-        toast.error(`Failed to delete deposit: ${error.message}`);
-        return;
-      }
+      // Delete via HospitalService
+      await HospitalService.deleteTransaction(deposit.id);
 
       logger.log('✅ Deposit deleted successfully:', deposit.id);
       toast.success(`Deposit deleted successfully!`);
@@ -518,11 +484,10 @@ const BillingSection: React.FC = () => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
-                activeTab === tab.id
+              className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${activeTab === tab.id
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
+                }`}
             >
               <tab.icon className="h-4 w-4" />
               <span>{tab.name}</span>
@@ -661,9 +626,8 @@ const BillingSection: React.FC = () => {
                         ₹{(patient.totalIPDBills || 0).toLocaleString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          patient.status === 'ACTIVE' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                        }`}>
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${patient.status === 'ACTIVE' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                          }`}>
                           {patient.status}
                         </span>
                       </td>
@@ -741,9 +705,8 @@ const BillingSection: React.FC = () => {
                 </div>
                 <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                   <h3 className="text-blue-800 font-medium mb-1">Status</h3>
-                  <p className={`text-lg font-medium ${
-                    selectedPatient.status === 'ACTIVE' ? 'text-green-600' : 'text-gray-600'
-                  }`}>
+                  <p className={`text-lg font-medium ${selectedPatient.status === 'ACTIVE' ? 'text-green-600' : 'text-gray-600'
+                    }`}>
                     {selectedPatient.status}
                   </p>
                 </div>
@@ -805,7 +768,9 @@ const BillingSection: React.FC = () => {
                         ))}
                       </div>
                     ) : (
-                      <p className="text-gray-500 text-center py-4">No deposits found</p>
+                      <div className="text-center py-8 text-gray-500">
+                        No deposits found
+                      </div>
                     )}
                   </div>
                 </div>
@@ -814,82 +779,37 @@ const BillingSection: React.FC = () => {
                 <div>
                   <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                     <FileText className="h-5 w-5 text-purple-600 mr-2" />
-                    IPD Bills
+                    IPD Bills History
                   </h3>
                   <div className="bg-gray-50 rounded-lg p-4 max-h-80 overflow-y-auto">
                     {patientIPDBills.length > 0 ? (
                       <div className="space-y-3">
-                        {patientIPDBills.map((bill: any) => (
+                        {patientIPDBills.map((bill) => (
                           <div key={bill.id} className="bg-white p-3 rounded border">
-                            <div className="flex justify-between items-start mb-2">
+                            <div className="flex justify-between items-start">
                               <div>
                                 <p className="font-medium text-purple-600">
-                                  ₹{(bill.amount || 0).toLocaleString()}
+                                  ₹{bill.amount.toLocaleString()}
                                 </p>
-                                <p className="text-sm text-gray-600">
-                                  {bill.description || `Bill #${bill.id.substring(0, 8)}`}
-                                </p>
+                                <p className="text-sm text-gray-600">{bill.description}</p>
                               </div>
                               <div className="text-right">
                                 <p className="text-sm text-gray-500">
                                   {new Date(bill.transaction_date || bill.created_at).toLocaleDateString('en-IN')}
                                 </p>
-                                <span className={`text-xs px-2 py-1 rounded-full ${
-                                  bill.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
-                                  bill.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
-                                  bill.status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
-                                  'bg-gray-100 text-gray-800'
-                                }`}>
-                                  {bill.status || 'PENDING'}
-                                </span>
+                                <p className="text-xs text-gray-400">{bill.payment_mode || 'CASH'}</p>
                               </div>
-                            </div>
-                            <div className="flex space-x-2">
-                              <button
-                                onClick={() => {
-                                  setActiveTab('ipd');
-                                  setShowPatientModal(false);
-                                  toast.success('Navigated to IPD billing');
-                                }}
-                                className="text-blue-600 hover:text-blue-800 text-xs px-2 py-1 bg-blue-50 rounded"
-                              >
-                                Edit
-                              </button>
-                              <button className="text-red-600 hover:text-red-800 text-xs px-2 py-1 bg-red-50 rounded">
-                                Delete
-                              </button>
-                              <button className="text-green-600 hover:text-green-800 text-xs px-2 py-1 bg-green-50 rounded">
-                                Print
-                              </button>
                             </div>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <p className="text-gray-500 text-center py-4">No IPD bills found</p>
+                      <div className="text-center py-8 text-gray-500">
+                        No IPD bills found
+                      </div>
                     )}
                   </div>
                 </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex justify-end space-x-3 mt-6 pt-4 border-t border-gray-200">
-                <button
-                  onClick={() => {
-                    setActiveTab('ipd');
-                    setShowPatientModal(false);
-                    toast.success('Navigated to IPD billing section');
-                  }}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                >
-                  Manage in IPD Billing
-                </button>
-                <button
-                  onClick={() => setShowPatientModal(false)}
-                  className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
-                >
-                  Close
-                </button>
               </div>
             </div>
           </div>

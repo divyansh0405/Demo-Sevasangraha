@@ -1,4 +1,4 @@
-import { supabase } from '../config/supabase';
+import axios from 'axios';
 
 interface SMSConfig {
   accountSid: string;
@@ -84,7 +84,10 @@ export class SMSService {
    */
   private static async logSMS(log: SMSLog): Promise<void> {
     try {
-      await supabase.from('sms_logs').insert([{
+      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3002';
+      const token = localStorage.getItem('auth_token');
+
+      await axios.post(`${baseUrl}/api/sms-logs`, {
         patient_id: log.patient_id,
         phone_number: log.phone_number,
         message: log.message,
@@ -92,7 +95,9 @@ export class SMSService {
         error_message: log.error_message,
         sms_type: log.sms_type,
         sent_at: new Date().toISOString(),
-      }]);
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
     } catch (error) {
       console.error('Failed to log SMS:', error);
       // Don't throw - logging failure shouldn't break SMS sending
@@ -287,14 +292,15 @@ Please arrive 15 minutes early.
    */
   static async getSMSLogs(patientId: string) {
     try {
-      const { data, error } = await supabase
-        .from('sms_logs')
-        .select('*')
-        .eq('patient_id', patientId)
-        .order('sent_at', { ascending: false });
+      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3002';
+      const token = localStorage.getItem('auth_token');
 
-      if (error) throw error;
-      return data;
+      const response = await axios.get(`${baseUrl}/api/sms-logs`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { patient_id: patientId }
+      });
+
+      return response.data;
     } catch (error) {
       console.error('Failed to fetch SMS logs:', error);
       return [];

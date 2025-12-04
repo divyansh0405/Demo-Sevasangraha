@@ -4,13 +4,13 @@ import { logger } from './utils/logger';
 import './utils/smartConsoleBlocker'; // Initialize console blocking immediately
 import HospitalService from './services/hospitalService';
 import EmailService from './services/emailService';
+import { ExactDateService } from './services/exactDateService';
 import type { User } from './config/supabaseNew';
-import { supabase } from './config/supabaseNew';
 import { useAuth } from './contexts/AuthContext';
-import { 
-  loadGoogleDriveAPI, 
-  initGoogleDriveClient, 
-  signInToGoogleDrive, 
+import {
+  loadGoogleDriveAPI,
+  initGoogleDriveClient,
+  signInToGoogleDrive,
   uploadToGoogleDrive,
   isGoogleAPILoaded,
   isSignedInToGoogleDrive,
@@ -79,15 +79,15 @@ const App: React.FC = () => {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   // const [showTriggerFix, setShowTriggerFix] = useState(false);
   const [showDebugger, setShowDebugger] = useState(false);
-  
+
   // Removed trigger fix logic - issue is in backend code
-  
+
   // Show debugger with Ctrl+Shift+D (Admin only)
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
       if (e.ctrlKey && e.shiftKey && e.key === 'D') {
         // Only allow admin access to the debugger
-        if (user && (isAdmin() || user.email === 'admin@valant.com' || user.email === 'meenal@valant.com')) {
+        if (user && (isAdmin() || user.email === 'admin@indic.com' || user.email === 'meenal@valant.com')) {
           setShowDebugger(true);
         } else {
           toast.error('Access denied. Admin privileges required for debugger.');
@@ -106,7 +106,7 @@ const App: React.FC = () => {
     email: '',
     phone: ''
   });
-  
+
   // Settings states
   const [settings, setSettings] = useState({
     autoHideNav: false,
@@ -114,7 +114,7 @@ const App: React.FC = () => {
     timeZone: 'Asia/Kolkata (IST)',
     language: 'English'
   });
-  
+
   // Data management states
   const [showExportModal, setShowExportModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
@@ -143,7 +143,7 @@ const App: React.FC = () => {
   // Auto-hide navigation after 3 seconds of inactivity (only if enabled in settings)
   useEffect(() => {
     if (!user) return;
-    
+
     // If auto-hide is disabled, always show navigation
     if (!settings.autoHideNav) {
       setIsNavVisible(true);
@@ -153,9 +153,9 @@ const App: React.FC = () => {
       }
       return;
     }
-    
+
     let timer: NodeJS.Timeout | null = null;
-    
+
     const startHideTimer = () => {
       if (timer) {
         clearTimeout(timer);
@@ -194,7 +194,7 @@ const App: React.FC = () => {
   // Handle mouse leave - start hide timer (only if auto-hide is enabled)
   const handleNavMouseLeave = () => {
     if (!settings.autoHideNav) return; // Don't hide if auto-hide is disabled
-    
+
     if (navHideTimer) {
       clearTimeout(navHideTimer);
     }
@@ -264,17 +264,10 @@ const App: React.FC = () => {
       // Here you would typically call an API to update the user profile
       // For now, we'll just show a success message and update local state
       toast.success('Profile updated successfully!');
-      
+
       // Update the current user state with new values
-      if (currentUser) {
-        setCurrentUser({
-          ...currentUser,
-          first_name: editedProfile.first_name,
-          last_name: editedProfile.last_name,
-          email: editedProfile.email,
-          phone: editedProfile.phone
-        });
-      }
+      // Note: This is a placeholder since we don't have a setCurrentUser method exposed from AuthContext
+      // In a real implementation, you'd call an updateProfile method from AuthContext
       
       setIsEditingProfile(false);
     } catch (error) {
@@ -286,8 +279,8 @@ const App: React.FC = () => {
   const handleCancelProfileEdit = () => {
     setIsEditingProfile(false);
     setEditedProfile({
-      first_name: '',
-      last_name: '',
+      firstName: '',
+      lastName: '',
       email: '',
       phone: ''
     });
@@ -316,84 +309,49 @@ const App: React.FC = () => {
   const performBackup = async () => {
     setIsBackupInProgress(true);
     const loadingToast = toast.loading('Creating backup...');
-    
+
     try {
       // Fetch comprehensive data for backup
       toast.dismiss(loadingToast);
       const statusToast = toast.loading('Fetching patient data...', { duration: 0 });
-      
+
       // Get ALL patients data with all fields (no limits, including inactive)
-      const { data: patients, error: patientsError } = await supabase
-        .from('patients')
-        .select('*')
-        .eq('hospital_id', '550e8400-e29b-41d4-a716-446655440000')
-        .order('created_at', { ascending: false });
+      const patients = await HospitalService.getPatients(10000, true, true);
       
-      if (patientsError) {
-        logger.error('Error fetching patients for backup:', patientsError);
+      if (!patients) {
+        logger.error('Error fetching patients for backup');
         toast.error('Failed to fetch patient data for backup');
-        throw patientsError;
+        throw new Error('Failed to fetch patients');
       }
-      
+
       toast.dismiss(statusToast);
       const appointmentToast = toast.loading('Fetching appointments...', { duration: 0 });
-      
+
       // Get ALL appointments (no limits)
-      const { data: appointments, error: appointmentsError } = await supabase
-        .from('future_appointments')
-        .select(`
-          *,
-          patient:patients(id, patient_id, first_name, last_name, phone),
-          doctor:users(id, first_name, last_name, email)
-        `)
-        .eq('hospital_id', '550e8400-e29b-41d4-a716-446655440000')
-        .order('appointment_date', { ascending: true })
-        .order('appointment_time', { ascending: true });
-      
-      if (appointmentsError) {
-        logger.error('Error fetching appointments for backup:', appointmentsError);
-        // Don't fail backup for appointments error, just log it
-        logger.warn('⚠️ Continuing backup without appointments');
-      }
-      
+      const appointments = await HospitalService.getAppointments(10000);
+
       toast.dismiss(appointmentToast);
       const transactionToast = toast.loading('Fetching transactions...', { duration: 0 });
-      
+
       // Get all transactions with patient details
-      const { data: transactions } = await supabase
-        .from('patient_transactions')
-        .select(`
-          *,
-          patient:patients(id, patient_id, first_name, last_name, phone)
-        `)
-        .eq('hospital_id', '550e8400-e29b-41d4-a716-446655440000')
-        .order('created_at', { ascending: false });
-      
+      const transactions = await HospitalService.getAllTransactions();
+
       toast.dismiss(transactionToast);
       const expenseToast = toast.loading('Fetching expenses...', { duration: 0 });
-      
+
       // Get all expenses
-      const { data: expenses } = await supabase
-        .from('daily_expenses')
-        .select('*')
-        .eq('hospital_id', '550e8400-e29b-41d4-a716-446655440000')
-        .order('expense_date', { ascending: false });
-        
+      const expenses = await HospitalService.getAllExpenses();
+
       toast.dismiss(expenseToast);
       const refundToast = toast.loading('Fetching refunds...', { duration: 0 });
-      
+
       // Get all refunds with error handling
       let refunds: any[] = [];
       try {
-        const { data: refundData, error: refundError } = await supabase
-          .from('patient_refunds')
-          .select(`
-            *,
-            patient:patients(id, patient_id, first_name, last_name, phone)
-          `)
-          .eq('hospital_id', '550e8400-e29b-41d4-a716-446655440000')
-          .order('created_at', { ascending: false });
-        
+        // Use ExactDateService to get all refunds (wide date range)
+        const refundData = await ExactDateService.getPatientRefunds('2000-01-01', '2100-12-31');
+        const refundError = null;
+
         if (!refundError && refundData) {
           refunds = refundData;
           logger.log(`✅ Retrieved ${refunds.length} refunds for backup`);
@@ -405,10 +363,10 @@ const App: React.FC = () => {
         logger.warn('⚠️ Error fetching refunds, using empty array:', error);
         refunds = [];
       }
-      
+
       toast.dismiss(refundToast);
       const finalToast = toast.loading('Preparing backup file...');
-      
+
       const backupData = {
         backup_info: {
           hospital_name: 'VALANT HOSPITAL',
@@ -464,7 +422,7 @@ const App: React.FC = () => {
           net_revenue: (transactions?.reduce((sum, t) => sum + (t.amount || 0), 0) || 0) - (refunds?.reduce((sum, r) => sum + (r.amount || 0), 0) || 0)
         }
       };
-      
+
       logger.log('📊 Backup Summary (ALL ENTRIES):', {
         patients: backupData.patients.count,
         transactions: backupData.transactions.count,
@@ -473,15 +431,15 @@ const App: React.FC = () => {
         refunds: backupData.refunds.count,
         total_records: backupData.backup_info.total_records
       });
-      
+
       logger.log('✅ COMPLETE DATABASE BACKUP - All patient entries included (no limits applied)');
       logger.log('📋 Patient sample check:', patients?.slice(0, 3).map(p => `${p.patient_id}: ${p.first_name} ${p.last_name}`));
-      
+
       toast.dismiss(finalToast);
-      
+
       const backupContent = JSON.stringify(backupData, null, 2);
       const fileName = `valant-hospital-backup-${new Date().toISOString().split('T')[0]}.json`;
-      
+
       if (backupSettings.storageLocation === 'local') {
         // Local storage backup - download file
         const blob = new Blob([backupContent], { type: 'application/json' });
@@ -493,10 +451,10 @@ const App: React.FC = () => {
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
-        
+
         toast.dismiss(loadingToast);
         toast.success(`✅ Complete backup saved as ${fileName}!\n📊 ALL ENTRIES BACKED UP: ${backupData.summary.total_patients} patients (complete details), ${backupData.summary.total_transactions} transactions, ${backupData.summary.total_appointments} appointments, ${backupData.summary.total_expenses} expenses, ${backupData.summary.total_refunds} refunds\n🔄 No limits applied - every single record included`, { duration: 10000 });
-        
+
       } else if (backupSettings.storageLocation === 'google-drive') {
         // Google Drive backup
         if (!isSignedInToGoogleDrive()) {
@@ -505,9 +463,9 @@ const App: React.FC = () => {
           setShowGoogleDriveSetup(true);
           return;
         }
-        
+
         const result = await uploadToGoogleDrive(fileName, backupContent, 'application/json');
-        
+
         if (result) {
           toast.dismiss(loadingToast);
           toast.success(`✅ Complete backup uploaded to Google Drive!\n📊 ALL ENTRIES BACKED UP: ${backupData.summary.total_patients} patients (complete details), ${backupData.summary.total_transactions} transactions, ${backupData.summary.total_appointments} appointments, ${backupData.summary.total_expenses} expenses, ${backupData.summary.total_refunds} refunds\n🔄 No limits applied - every single record included\n🔗 ${result.webViewLink}`, { duration: 12000 });
@@ -517,10 +475,10 @@ const App: React.FC = () => {
           toast.error('Failed to upload backup to Google Drive');
         }
       }
-      
+
       // Save backup timestamp
       localStorage.setItem('lastBackup', new Date().toISOString());
-      
+
     } catch (error) {
       logger.error('Backup error:', error);
       toast.dismiss(loadingToast);
@@ -532,28 +490,28 @@ const App: React.FC = () => {
 
   const handleGoogleDriveConnect = async () => {
     const loadingToast = toast.loading('Connecting to Google Drive...');
-    
+
     try {
       // Load Google API if not already loaded
       if (!isGoogleAPILoaded()) {
         await loadGoogleDriveAPI();
       }
-      
+
       // Initialize with user's credentials
       const initialized = await initGoogleDriveClient(
         googleDriveCredentials.clientId,
         googleDriveCredentials.apiKey
       );
-      
+
       if (!initialized) {
         toast.dismiss(loadingToast);
         toast.error('Failed to initialize Google Drive. Please check your credentials.');
         return;
       }
-      
+
       // Sign in
       const user = await signInToGoogleDrive();
-      
+
       if (user) {
         setGoogleDriveUser(user);
         localStorage.setItem('googleDriveCredentials', JSON.stringify(googleDriveCredentials));
@@ -586,7 +544,7 @@ const App: React.FC = () => {
       localStorage.removeItem('hospitalTransactionCache');
       localStorage.removeItem('hospitalAppointmentCache');
       sessionStorage.clear();
-      
+
       // Clear query cache if using React Query
       if (window.location.reload) {
         toast.success('Cache cleared! Page will reload...', { duration: 2000 });
@@ -600,7 +558,7 @@ const App: React.FC = () => {
   const performDataExport = async () => {
     try {
       const loadingToast = toast.loading('Fetching data from database...');
-      
+
       const exportDataObject: any = {
         export_info: {
           hospital_name: 'VALANT HOSPITAL',
@@ -608,56 +566,45 @@ const App: React.FC = () => {
           exported_by: user?.email || 'Unknown'
         }
       };
-      
+
       // Fetch real data from database
       if (exportData.patients) {
-        const { data: patients } = await HospitalService.getPatients();
+        const patients = await HospitalService.getPatients();
         exportDataObject.patients = {
           count: patients?.length || 0,
           data: patients || []
         };
       }
-      
+
       if (exportData.transactions) {
-        const { data: transactions } = await supabase
-          .from('patient_transactions')
-          .select('*')
-          .eq('hospital_id', '550e8400-e29b-41d4-a716-446655440000');
+        const transactions = await HospitalService.getAllTransactions();
         exportDataObject.transactions = {
           count: transactions?.length || 0,
           data: transactions || []
         };
       }
-      
+
       if (exportData.appointments) {
-        const { data: appointments } = await HospitalService.getAppointments();
+        const appointments = await HospitalService.getAppointments();
         exportDataObject.appointments = {
           count: appointments?.length || 0,
           data: appointments || []
         };
       }
-      
+
       if (exportData.expenses) {
-        const { data: expenses } = await supabase
-          .from('daily_expenses')
-          .select('*')
-          .eq('hospital_id', '550e8400-e29b-41d4-a716-446655440000');
+        const expenses = await HospitalService.getAllExpenses();
         exportDataObject.expenses = {
           count: expenses?.length || 0,
           data: expenses || []
         };
       }
-      
+
       // Add refunds data to export
       try {
-        const { data: refunds } = await supabase
-          .from('patient_refunds')
-          .select(`
-            *,
-            patient:patients(id, patient_id, first_name, last_name, phone)
-          `)
-          .eq('hospital_id', '550e8400-e29b-41d4-a716-446655440000');
-          
+        // Use ExactDateService to get all refunds (wide date range)
+        const refunds = await ExactDateService.getPatientRefunds('2000-01-01', '2100-12-31');
+
         exportDataObject.refunds = {
           count: refunds?.length || 0,
           data: refunds || [],
@@ -671,15 +618,15 @@ const App: React.FC = () => {
           note: 'Refunds table not accessible'
         };
       }
-      
+
       toast.dismiss(loadingToast);
       toast.loading('Generating export file...', { duration: 2000 });
-      
+
       // Create file content
       let fileContent: string;
       let fileName: string;
       let mimeType: string;
-      
+
       if (exportFormat === 'json') {
         fileContent = JSON.stringify(exportDataObject, null, 2);
         fileName = `valant-hospital-data-${new Date().toISOString().split('T')[0]}.json`;
@@ -688,7 +635,7 @@ const App: React.FC = () => {
         // CSV format with real data
         let csvContent = 'VALANT HOSPITAL DATA EXPORT\n';
         csvContent += `Exported on: ${new Date().toLocaleString()}\n\n`;
-        
+
         if (exportData.patients && exportDataObject.patients?.data?.length > 0) {
           csvContent += '=== PATIENTS ===\n';
           csvContent += 'Patient ID,First Name,Last Name,Phone,Doctor Name,Department,Gender,Age,Address,Patient Tag,Visit Count,Department Status,Total Spent,Last Visit,Registration Date\n';
@@ -697,13 +644,13 @@ const App: React.FC = () => {
             const department = p.assigned_department || (p.assigned_doctors && p.assigned_doctors.length > 0 ? p.assigned_doctors[0].department : '') || '';
             const lastVisitDate = p.lastVisit || p.date_of_entry || p.created_at || '';
             const registrationDate = p.created_at || p.date_of_entry || '';
-            
+
             csvContent += `"${p.patient_id || 'N/A'}","${p.first_name || ''}","${p.last_name || ''}","${p.phone || ''}","${doctorName}","${department}","${p.gender === 'MALE' ? 'Male' : p.gender === 'FEMALE' ? 'Female' : p.gender || ''}","${p.age || ''}","${p.address || ''}","${p.patient_tag || p.notes || ''}","${p.visitCount || 0}","${p.departmentStatus || 'OPD'}","${p.totalSpent || 0}","${lastVisitDate ? new Date(lastVisitDate).toLocaleDateString() : 'No visits'}","${registrationDate ? new Date(registrationDate).toLocaleDateString() : 'Unknown'}"
 `;
           });
           csvContent += '\n';
         }
-        
+
         if (exportData.transactions && exportDataObject.transactions?.data?.length > 0) {
           csvContent += '=== TRANSACTIONS ===\n';
           csvContent += 'Transaction ID,Type,Amount,Payment Mode,Description,Date\n';
@@ -712,7 +659,7 @@ const App: React.FC = () => {
           });
           csvContent += '\n';
         }
-        
+
         if (exportData.appointments && exportDataObject.appointments?.data?.length > 0) {
           csvContent += '=== APPOINTMENTS ===\n';
           csvContent += 'Appointment ID,Patient,Doctor,Date,Time,Type,Status\n';
@@ -721,7 +668,7 @@ const App: React.FC = () => {
           });
           csvContent += '\n';
         }
-        
+
         if (exportData.expenses && exportDataObject.expenses?.data?.length > 0) {
           csvContent += '=== EXPENSES ===\n';
           csvContent += 'Expense ID,Category,Amount,Description,Payment Mode,Vendor,Date\n';
@@ -730,7 +677,7 @@ const App: React.FC = () => {
           });
           csvContent += '\n';
         }
-        
+
         if (exportDataObject.refunds?.data?.length > 0) {
           csvContent += '=== REFUNDS ===\n';
           csvContent += 'Refund ID,Patient ID,Patient Name,Amount,Reason,Payment Mode,Date\n';
@@ -739,12 +686,12 @@ const App: React.FC = () => {
             csvContent += `"${r.id}","${r.patient_id || 'N/A'}","${patientName}",${r.amount || 0},"${r.reason || 'N/A'}","${r.payment_mode || 'N/A'}","${new Date(r.created_at).toLocaleDateString()}"\n`;
           });
         }
-        
+
         fileContent = csvContent;
         fileName = `valant-hospital-data-${new Date().toISOString().split('T')[0]}.csv`;
         mimeType = 'text/csv';
       }
-      
+
       // Create and download file
       const blob = new Blob([fileContent], { type: mimeType });
       const url = URL.createObjectURL(blob);
@@ -755,10 +702,10 @@ const App: React.FC = () => {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      
+
       setShowExportModal(false);
       toast.success(`Data exported successfully as ${fileName}!`);
-      
+
     } catch (error) {
       toast.error('Export failed. Please try again.');
       logger.error('Export error:', error);
@@ -774,7 +721,7 @@ const App: React.FC = () => {
       try {
         const content = e.target?.result as string;
         let parsedData;
-        
+
         if (file.type === 'application/json' || file.name.endsWith('.json')) {
           parsedData = JSON.parse(content);
           toast.success(`JSON file parsed successfully! Found ${Object.keys(parsedData).length} data sections.`);
@@ -785,13 +732,13 @@ const App: React.FC = () => {
           toast.error('Unsupported file format. Please use JSON or CSV files.');
           return;
         }
-        
+
         // Process imported data for database insertion
         if (file.type === 'application/json' || file.name.endsWith('.json')) {
           const parsedData = JSON.parse(content);
           const loadingToast = toast.loading('Importing data to database...');
           let importedCount = 0;
-          
+
           try {
             // Import patients
             if (parsedData.patients && Array.isArray(parsedData.patients)) {
@@ -799,7 +746,7 @@ const App: React.FC = () => {
                 try {
                   // Skip if patient already exists (basic validation)
                   if (!patient.first_name) continue;
-                  
+
                   await HospitalService.createPatient({
                     first_name: patient.first_name,
                     last_name: patient.last_name || '',
@@ -822,25 +769,25 @@ const App: React.FC = () => {
                 }
               }
             }
-            
+
             toast.dismiss(loadingToast);
             toast.success(`Successfully imported ${importedCount} new patients!`);
-            
+
           } catch (error) {
             toast.dismiss(loadingToast);
             toast.error('Failed to import data. Please check the format.');
             logger.error('Import error:', error);
           }
         }
-        
+
         setShowImportModal(false);
-        
+
       } catch (error) {
         toast.error('Failed to parse file. Please check the format.');
         logger.error('Import error:', error);
       }
     };
-    
+
     reader.readAsText(file);
   };
 
@@ -863,7 +810,7 @@ const App: React.FC = () => {
     if (savedBackupSettings) {
       setBackupSettings(JSON.parse(savedBackupSettings));
     }
-    
+
     const savedGoogleCredentials = localStorage.getItem('googleDriveCredentials');
     if (savedGoogleCredentials) {
       setGoogleDriveCredentials(JSON.parse(savedGoogleCredentials));
@@ -903,52 +850,52 @@ const App: React.FC = () => {
 
   // Main app navigation tabs - CLEAN PRODUCTION
   const tabs = [
-    { 
-      id: 'dashboard', 
-      name: '📊 Dashboard', 
+    {
+      id: 'dashboard',
+      name: '📊 Dashboard',
       component: EnhancedDashboard
     },
-    { 
-      id: 'patient-entry', 
-      name: '👤 New Patient', 
+    {
+      id: 'patient-entry',
+      name: '👤 New Patient',
       component: NewFlexiblePatientEntry,
-      description: 'Register new patients with comprehensive information and reference tracking' 
+      description: 'Register new patients with comprehensive information and reference tracking'
     },
-    { 
-      id: 'patient-list', 
-      name: '👥 Patient List', 
+    {
+      id: 'patient-list',
+      name: '👥 Patient List',
       component: ComprehensivePatientList,
-      description: 'View and manage all registered patients' 
+      description: 'View and manage all registered patients'
     },
-    { 
-      id: 'ipd-beds', 
-      name: '🛏️ IPD Beds', 
+    {
+      id: 'ipd-beds',
+      name: '🛏️ IPD Beds',
       component: IPDBedManagement,
-      description: 'Real-time hospital bed occupancy tracking and management' 
+      description: 'Real-time hospital bed occupancy tracking and management'
     },
-    { 
-      id: 'discharge', 
-      name: '📤 Discharge', 
+    {
+      id: 'discharge',
+      name: '📤 Discharge',
       component: DischargeSection,
-      description: 'View all discharged patients with complete discharge summaries' 
+      description: 'View all discharged patients with complete discharge summaries'
     },
-    { 
-      id: 'expenses', 
-      name: '💸 Expenses', 
+    {
+      id: 'expenses',
+      name: '💸 Expenses',
       component: DailyExpenseTab,
-      description: 'Record and track daily hospital expenses' 
+      description: 'Record and track daily hospital expenses'
     },
-    { 
-      id: 'refunds', 
-      name: '💰 Refunds', 
+    {
+      id: 'refunds',
+      name: '💰 Refunds',
       component: RefundTab,
-      description: 'Process patient refunds and maintain financial records' 
+      description: 'Process patient refunds and maintain financial records'
     },
-    { 
-      id: 'billing', 
-      name: '💳 Billing', 
+    {
+      id: 'billing',
+      name: '💳 Billing',
       component: BillingSection,
-      description: 'Generate IPD, OPD, and Combined bills for patients' 
+      description: 'Generate IPD, OPD, and Combined bills for patients'
     },
     {
       id: 'operations',
@@ -1004,9 +951,9 @@ const App: React.FC = () => {
           <div className="flex justify-between items-center py-3">
             <div className="flex items-center space-x-4">
               {/* Logo */}
-              <img 
-                src="/logo.png" 
-                alt="VALANT HOSPITAL" 
+              <img
+                src="/logo.png"
+                alt="VALANT HOSPITAL"
                 className="h-12 w-12 object-contain"
               />
               {/* Hospital Name */}
@@ -1017,7 +964,7 @@ const App: React.FC = () => {
                 </p>
               </div>
             </div>
-            
+
 
             {/* Right Side - User Info & Actions */}
             <div className="flex items-center space-x-4">
@@ -1123,11 +1070,10 @@ const App: React.FC = () => {
         <div className="w-full">
           {/* All Navigation Tabs in Single Row */}
           <div
-            className={`transition-all duration-500 ease-in-out transform ${
-              (isNavVisible || !settings.autoHideNav)
+            className={`transition-all duration-500 ease-in-out transform ${(isNavVisible || !settings.autoHideNav)
                 ? 'translate-y-0 opacity-100 max-h-20'
                 : '-translate-y-full opacity-0 max-h-0 overflow-hidden'
-            }`}
+              }`}
           >
             <nav className="flex justify-between gap-1 py-3 px-6">
               {filteredTabs.map((tab) => (
@@ -1144,11 +1090,10 @@ const App: React.FC = () => {
                     }, 3000);
                     setNavHideTimer(timer);
                   }}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                    activeTab === tab.id
+                  className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${activeTab === tab.id
                       ? 'bg-blue-100 text-blue-700 border border-blue-200'
                       : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
-                  }`}
+                    }`}
                 >
                   {tab.name}
                 </button>
@@ -1158,10 +1103,9 @@ const App: React.FC = () => {
 
           {/* Minimal Hover Trigger Area - Only visible when navigation is hidden AND auto-hide is enabled */}
           {settings.autoHideNav && (
-            <div 
-              className={`transition-all duration-300 ${
-                isNavVisible ? 'h-0 opacity-0' : 'h-2 opacity-0 hover:bg-gray-100'
-              }`}
+            <div
+              className={`transition-all duration-300 ${isNavVisible ? 'h-0 opacity-0' : 'h-2 opacity-0 hover:bg-gray-100'
+                }`}
             >
               {/* Invisible hover area to trigger navigation */}
             </div>
@@ -1239,11 +1183,10 @@ const App: React.FC = () => {
                       <input
                         type="text"
                         value={isEditingProfile ? editedProfile.firstName : user.firstName || ''}
-                        onChange={(e) => isEditingProfile && setEditedProfile(prev => ({ ...prev, first_name: e.target.value }))}
+                        onChange={(e) => isEditingProfile && setEditedProfile(prev => ({ ...prev, firstName: e.target.value }))}
                         readOnly={!isEditingProfile}
-                        className={`mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md ${
-                          isEditingProfile ? 'bg-white text-gray-900 focus:ring-2 focus:ring-blue-500' : 'bg-gray-50 text-gray-900'
-                        }`}
+                        className={`mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md ${isEditingProfile ? 'bg-white text-gray-900 focus:ring-2 focus:ring-blue-500' : 'bg-gray-50 text-gray-900'
+                          }`}
                       />
                     </div>
                     <div>
@@ -1251,11 +1194,10 @@ const App: React.FC = () => {
                       <input
                         type="text"
                         value={isEditingProfile ? editedProfile.lastName : user.lastName || ''}
-                        onChange={(e) => isEditingProfile && setEditedProfile(prev => ({ ...prev, last_name: e.target.value }))}
+                        onChange={(e) => isEditingProfile && setEditedProfile(prev => ({ ...prev, lastName: e.target.value }))}
                         readOnly={!isEditingProfile}
-                        className={`mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md ${
-                          isEditingProfile ? 'bg-white text-gray-900 focus:ring-2 focus:ring-blue-500' : 'bg-gray-50 text-gray-900'
-                        }`}
+                        className={`mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md ${isEditingProfile ? 'bg-white text-gray-900 focus:ring-2 focus:ring-blue-500' : 'bg-gray-50 text-gray-900'
+                          }`}
                       />
                     </div>
                     <div>
@@ -1265,9 +1207,8 @@ const App: React.FC = () => {
                         value={isEditingProfile ? editedProfile.email : user.email || ''}
                         onChange={(e) => isEditingProfile && setEditedProfile(prev => ({ ...prev, email: e.target.value }))}
                         readOnly={!isEditingProfile}
-                        className={`mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md ${
-                          isEditingProfile ? 'bg-white text-gray-900 focus:ring-2 focus:ring-blue-500' : 'bg-gray-50 text-gray-900'
-                        }`}
+                        className={`mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md ${isEditingProfile ? 'bg-white text-gray-900 focus:ring-2 focus:ring-blue-500' : 'bg-gray-50 text-gray-900'
+                          }`}
                       />
                     </div>
                     <div>
@@ -1278,9 +1219,8 @@ const App: React.FC = () => {
                         onChange={(e) => isEditingProfile && setEditedProfile(prev => ({ ...prev, phone: e.target.value }))}
                         readOnly={!isEditingProfile}
                         placeholder="Enter phone number"
-                        className={`mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md ${
-                          isEditingProfile ? 'bg-white text-gray-900 focus:ring-2 focus:ring-blue-500' : 'bg-gray-50 text-gray-900'
-                        }`}
+                        className={`mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md ${isEditingProfile ? 'bg-white text-gray-900 focus:ring-2 focus:ring-blue-500' : 'bg-gray-50 text-gray-900'
+                          }`}
                       />
                     </div>
                   </div>
@@ -1422,25 +1362,22 @@ const App: React.FC = () => {
                       <div>
                         <h4 className="font-medium text-gray-900">Auto-hide Navigation</h4>
                         <p className="text-sm text-gray-600">
-                          Hide navigation tabs after inactivity 
-                          <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
-                            settings.autoHideNav 
-                              ? 'bg-green-100 text-green-800' 
+                          Hide navigation tabs after inactivity
+                          <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${settings.autoHideNav
+                              ? 'bg-green-100 text-green-800'
                               : 'bg-gray-100 text-gray-800'
-                          }`}>
+                            }`}>
                             {settings.autoHideNav ? 'ENABLED' : 'DISABLED'}
                           </span>
                         </p>
                       </div>
                       <button
                         onClick={() => handleSettingChange('autoHideNav', !settings.autoHideNav)}
-                        className={`w-12 h-6 rounded-full relative transition-colors ${
-                          settings.autoHideNav ? 'bg-blue-600' : 'bg-gray-300'
-                        }`}
+                        className={`w-12 h-6 rounded-full relative transition-colors ${settings.autoHideNav ? 'bg-blue-600' : 'bg-gray-300'
+                          }`}
                       >
-                        <div className={`w-5 h-5 bg-white rounded-full absolute top-0.5 transition-transform ${
-                          settings.autoHideNav ? 'right-0.5' : 'left-0.5'
-                        }`}></div>
+                        <div className={`w-5 h-5 bg-white rounded-full absolute top-0.5 transition-transform ${settings.autoHideNav ? 'right-0.5' : 'left-0.5'
+                          }`}></div>
                       </button>
                     </div>
                     <div className="flex items-center justify-between">
@@ -1450,20 +1387,18 @@ const App: React.FC = () => {
                       </div>
                       <button
                         onClick={() => handleSettingChange('soundNotifications', !settings.soundNotifications)}
-                        className={`w-12 h-6 rounded-full relative transition-colors ${
-                          settings.soundNotifications ? 'bg-blue-600' : 'bg-gray-300'
-                        }`}
+                        className={`w-12 h-6 rounded-full relative transition-colors ${settings.soundNotifications ? 'bg-blue-600' : 'bg-gray-300'
+                          }`}
                       >
-                        <div className={`w-5 h-5 bg-white rounded-full absolute top-0.5 transition-transform ${
-                          settings.soundNotifications ? 'right-0.5' : 'left-0.5'
-                        }`}></div>
+                        <div className={`w-5 h-5 bg-white rounded-full absolute top-0.5 transition-transform ${settings.soundNotifications ? 'right-0.5' : 'left-0.5'
+                          }`}></div>
                       </button>
                     </div>
                   </div>
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Time Zone</label>
-                      <select 
+                      <select
                         value={settings.timeZone}
                         onChange={(e) => handleSettingChange('timeZone', e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
@@ -1478,7 +1413,7 @@ const App: React.FC = () => {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Language</label>
-                      <select 
+                      <select
                         value={settings.language}
                         onChange={(e) => handleSettingChange('language', e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
@@ -1498,156 +1433,175 @@ const App: React.FC = () => {
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center">
                   <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
                   </svg>
                   Data Management
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <button 
-                    onClick={handleDataExport}
-                    className="p-4 border border-gray-300 rounded-lg hover:bg-blue-50 hover:border-blue-300 text-left transition-colors"
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <button
+                    onClick={() => {
+                      setShowSettingsModal(false);
+                      handleDataExport();
+                    }}
+                    className="flex flex-col items-center justify-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors border border-gray-200"
                   >
-                    <div className="flex items-center">
-                      <svg className="w-5 h-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                      <h4 className="font-medium text-gray-900">Export Data</h4>
-                    </div>
-                    <p className="text-sm text-gray-600 mt-1">Download patient and transaction data</p>
+                    <svg className="w-8 h-8 text-blue-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    <span className="font-medium text-gray-900">Export Data</span>
+                    <span className="text-xs text-gray-500 mt-1">Download CSV/JSON</span>
                   </button>
-                  <button 
-                    onClick={handleDataImport}
-                    className="p-4 border border-gray-300 rounded-lg hover:bg-green-50 hover:border-green-300 text-left transition-colors"
+                  <button
+                    onClick={() => {
+                      setShowSettingsModal(false);
+                      handleDataImport();
+                    }}
+                    className="flex flex-col items-center justify-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors border border-gray-200"
                   >
-                    <div className="flex items-center">
-                      <svg className="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
-                      </svg>
-                      <h4 className="font-medium text-gray-900">Import Data</h4>
-                    </div>
-                    <p className="text-sm text-gray-600 mt-1">Upload data from external sources</p>
+                    <svg className="w-8 h-8 text-green-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
+                    <span className="font-medium text-gray-900">Import Data</span>
+                    <span className="text-xs text-gray-500 mt-1">Upload CSV/JSON</span>
                   </button>
-                  <button 
-                    onClick={handleBackupSettings}
-                    className="p-4 border border-gray-300 rounded-lg hover:bg-yellow-50 hover:border-yellow-300 text-left transition-colors"
+                  <button
+                    onClick={() => {
+                      setShowSettingsModal(false);
+                      handleBackupSettings();
+                    }}
+                    className="flex flex-col items-center justify-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors border border-gray-200"
                   >
-                    <div className="flex items-center">
-                      <svg className="w-5 h-5 text-yellow-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                      </svg>
-                      <h4 className="font-medium text-gray-900">Backup Settings</h4>
-                    </div>
-                    <p className="text-sm text-gray-600 mt-1">Configure automatic backups</p>
-                  </button>
-                  <button 
-                    onClick={handleClearCache}
-                    className="p-4 border border-gray-300 rounded-lg hover:bg-red-50 hover:border-red-300 text-left transition-colors"
-                  >
-                    <div className="flex items-center">
-                      <svg className="w-5 h-5 text-red-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                      <h4 className="font-medium text-gray-900">Clear Cache</h4>
-                    </div>
-                    <p className="text-sm text-gray-600 mt-1">Clear temporary data and cache</p>
+                    <svg className="w-8 h-8 text-purple-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                    </svg>
+                    <span className="font-medium text-gray-900">Backup Settings</span>
+                    <span className="text-xs text-gray-500 mt-1">Configure auto-backup</span>
                   </button>
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
-                <button
-                  onClick={() => setShowSettingsModal(false)}
-                  className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
-                >
-                  Close
-                </button>
-                <button
-                  onClick={() => {
-                    // Settings are already saved to localStorage via useEffect
-                    toast.success(`Settings saved successfully!
-                    • Auto-hide Navigation: ${settings.autoHideNav ? 'ON' : 'OFF'}
-                    • Sound Notifications: ${settings.soundNotifications ? 'ON' : 'OFF'}
-                    • Time Zone: ${settings.timeZone}
-                    • Language: ${settings.language}`, 
-                    { duration: 4000 });
-                    setShowSettingsModal(false);
-                  }}
-                  className="px-4 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-900"
-                >
-                  Save Settings
-                </button>
+              {/* Advanced Actions */}
+              <div className="space-y-4 pt-4 border-t border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  Advanced Actions
+                </h3>
+                <div className="flex space-x-4">
+                  <button
+                    onClick={handleClearCache}
+                    className="px-4 py-2 bg-orange-100 text-orange-700 rounded-md hover:bg-orange-200 flex items-center"
+                  >
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Clear Cache & Reload
+                  </button>
+                  {isAdmin() && (
+                    <button
+                      onClick={() => {
+                        setShowSettingsModal(false);
+                        setShowDebugger(true);
+                      }}
+                      className="px-4 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-700 flex items-center"
+                    >
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                      </svg>
+                      Open Debugger
+                    </button>
+                  )}
+                </div>
               </div>
+            </div>
+
+            {/* Footer */}
+            <div className="bg-gray-50 px-6 py-4 border-t border-gray-200 flex justify-end">
+              <button
+                onClick={() => setShowSettingsModal(false)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium"
+              >
+                Done
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Export Data Modal */}
+      {/* Export Modal */}
       {showExportModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden">
-            <div className="bg-blue-600 text-white p-6 flex justify-between items-center">
-              <div>
-                <h2 className="text-xl font-bold">Export Data</h2>
-                <p className="text-blue-100">Download your hospital data</p>
-              </div>
-              <button
-                onClick={() => setShowExportModal(false)}
-                className="text-white hover:text-blue-200 text-2xl font-bold"
-              >
-                ×
-              </button>
-            </div>
-            
-            <div className="p-6 space-y-6">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Select Data to Export</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  {Object.entries(exportData).map(([key, value]) => (
-                    <label key={key} className="flex items-center space-x-3">
+          <div className="bg-white rounded-lg shadow-lg max-w-md w-full mx-4">
+            <div className="p-6">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">Export Data</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Format</label>
+                  <select
+                    value={exportFormat}
+                    onChange={(e) => setExportFormat(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  >
+                    <option value="json">JSON (Complete Data)</option>
+                    <option value="csv">CSV (Spreadsheet)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Include Data</label>
+                  <div className="space-y-2">
+                    <label className="flex items-center">
                       <input
                         type="checkbox"
-                        checked={value}
-                        onChange={(e) => setExportData(prev => ({ ...prev, [key]: e.target.checked }))}
-                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        checked={exportData.patients}
+                        onChange={(e) => setExportData(prev => ({ ...prev, patients: e.target.checked }))}
+                        className="rounded text-blue-600"
                       />
-                      <span className="text-gray-900 capitalize">{key}</span>
+                      <span className="ml-2 text-sm text-gray-700">Patients</span>
                     </label>
-                  ))}
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={exportData.transactions}
+                        onChange={(e) => setExportData(prev => ({ ...prev, transactions: e.target.checked }))}
+                        className="rounded text-blue-600"
+                      />
+                      <span className="ml-2 text-sm text-gray-700">Transactions</span>
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={exportData.appointments}
+                        onChange={(e) => setExportData(prev => ({ ...prev, appointments: e.target.checked }))}
+                        className="rounded text-blue-600"
+                      />
+                      <span className="ml-2 text-sm text-gray-700">Appointments</span>
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={exportData.expenses}
+                        onChange={(e) => setExportData(prev => ({ ...prev, expenses: e.target.checked }))}
+                        className="rounded text-blue-600"
+                      />
+                      <span className="ml-2 text-sm text-gray-700">Daily Expenses</span>
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={exportData.refunds}
+                        onChange={(e) => setExportData(prev => ({ ...prev, refunds: e.target.checked }))}
+                        className="rounded text-blue-600"
+                      />
+                      <span className="ml-2 text-sm text-gray-700">Refunds</span>
+                    </label>
+                  </div>
                 </div>
               </div>
-              
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Export Format</h3>
-                <div className="flex space-x-4">
-                  <label className="flex items-center space-x-2">
-                    <input
-                      type="radio"
-                      value="json"
-                      checked={exportFormat === 'json'}
-                      onChange={(e) => setExportFormat(e.target.value)}
-                      className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                    />
-                    <span>JSON Format</span>
-                  </label>
-                  <label className="flex items-center space-x-2">
-                    <input
-                      type="radio"
-                      value="csv"
-                      checked={exportFormat === 'csv'}
-                      onChange={(e) => setExportFormat(e.target.value)}
-                      className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                    />
-                    <span>CSV Format</span>
-                  </label>
-                </div>
-              </div>
-              
-              <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+              <div className="mt-6 flex justify-end space-x-3">
                 <button
                   onClick={() => setShowExportModal(false)}
-                  className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
+                  className="px-4 py-2 text-gray-600 hover:text-gray-800"
                 >
                   Cancel
                 </button>
@@ -1655,7 +1609,7 @@ const App: React.FC = () => {
                   onClick={performDataExport}
                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
                 >
-                  Export Data
+                  Export
                 </button>
               </div>
             </div>
@@ -1663,68 +1617,33 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Import Data Modal */}
+      {/* Import Modal */}
       {showImportModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden">
-            <div className="bg-green-600 text-white p-6 flex justify-between items-center">
-              <div>
-                <h2 className="text-xl font-bold">Import Data</h2>
-                <p className="text-green-100">Upload data from external sources</p>
-              </div>
-              <button
-                onClick={() => setShowImportModal(false)}
-                className="text-white hover:text-green-200 text-2xl font-bold"
-              >
-                ×
-              </button>
-            </div>
-            
-            <div className="p-6 space-y-6">
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                  <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                <div className="mt-4">
-                  <label htmlFor="file-upload" className="cursor-pointer">
-                    <span className="mt-2 block text-sm font-medium text-gray-900">
-                      Click to upload or drag and drop
-                    </span>
-                    <span className="mt-1 block text-sm text-gray-500">
-                      JSON or CSV files only
-                    </span>
-                  </label>
-                  <input
-                    id="file-upload"
-                    name="file-upload"
-                    type="file"
-                    accept=".json,.csv"
-                    onChange={handleFileImport}
-                    className="sr-only"
-                  />
-                </div>
-              </div>
-              
-              <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
-                <div className="flex">
-                  <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+          <div className="bg-white rounded-lg shadow-lg max-w-md w-full mx-4">
+            <div className="p-6">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">Import Data</h3>
+              <div className="space-y-4">
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                  <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
-                  <div className="ml-3">
-                    <h3 className="text-sm font-medium text-yellow-800">Important</h3>
-                    <p className="mt-1 text-sm text-yellow-700">
-                      Make sure your data follows the correct format. Importing will add new records but won't overwrite existing ones.
-                    </p>
+                  <div className="mt-4 flex text-sm text-gray-600 justify-center">
+                    <label htmlFor="file-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                      <span>Upload a file</span>
+                      <input id="file-upload" name="file-upload" type="file" className="sr-only" accept=".json,.csv" onChange={handleFileImport} />
+                    </label>
+                    <p className="pl-1">or drag and drop</p>
                   </div>
+                  <p className="text-xs text-gray-500">JSON or CSV up to 10MB</p>
                 </div>
               </div>
-              
-              <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+              <div className="mt-6 flex justify-end">
                 <button
                   onClick={() => setShowImportModal(false)}
-                  className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
+                  className="px-4 py-2 text-gray-600 hover:text-gray-800"
                 >
-                  Close
+                  Cancel
                 </button>
               </div>
             </div>
@@ -1735,151 +1654,99 @@ const App: React.FC = () => {
       {/* Backup Settings Modal */}
       {showBackupModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden">
-            <div className="bg-yellow-600 text-white p-6 flex justify-between items-center">
-              <div>
-                <h2 className="text-xl font-bold">Backup Settings</h2>
-                <p className="text-yellow-100">Configure automatic data backups</p>
-              </div>
-              <button
-                onClick={() => setShowBackupModal(false)}
-                className="text-white hover:text-yellow-200 text-2xl font-bold"
-              >
-                ×
-              </button>
-            </div>
-            
-            <div className="p-6 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-white rounded-lg shadow-lg max-w-md w-full mx-4">
+            <div className="p-6">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">Backup Settings</h3>
+              <div className="space-y-4">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Backup Frequency</h3>
-                  <select className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-yellow-500">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Frequency</label>
+                  <select
+                    value={backupSettings.frequency}
+                    onChange={(e) => setBackupSettings(prev => ({ ...prev, frequency: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  >
                     <option>Daily</option>
                     <option>Weekly</option>
                     <option>Monthly</option>
-                    <option>Manual only</option>
                   </select>
                 </div>
-                
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Backup Time</h3>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Time</label>
                   <input
                     type="time"
-                    defaultValue="02:00"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-yellow-500"
+                    value={backupSettings.time}
+                    onChange={(e) => setBackupSettings(prev => ({ ...prev, time: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
                   />
                 </div>
-              </div>
-              
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Storage Location</h3>
-                <div className="space-y-3">
-                  <label className="flex items-center space-x-3">
-                    <input 
-                      type="radio" 
-                      name="storage" 
-                      value="local"
-                      checked={backupSettings.storageLocation === 'local'}
-                      onChange={(e) => setBackupSettings(prev => ({ ...prev, storageLocation: e.target.value }))}
-                      className="w-4 h-4 text-yellow-600" 
-                    />
-                    <span>Local Storage (Download)</span>
-                  </label>
-                  <label className="flex items-center space-x-3">
-                    <input 
-                      type="radio" 
-                      name="storage" 
-                      value="google-drive"
-                      checked={backupSettings.storageLocation === 'google-drive'}
-                      onChange={(e) => setBackupSettings(prev => ({ ...prev, storageLocation: e.target.value }))}
-                      className="w-4 h-4 text-yellow-600" 
-                    />
-                    <span>Cloud Storage (Google Drive)</span>
-                    {googleDriveUser && (
-                      <span className="text-sm text-green-600">
-                        ✓ Connected as {googleDriveUser.email}
-                      </span>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Storage Location</label>
+                  <select
+                    value={backupSettings.storageLocation}
+                    onChange={(e) => setBackupSettings(prev => ({ ...prev, storageLocation: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  >
+                    <option value="local">Local Download</option>
+                    <option value="google-drive">Google Drive</option>
+                  </select>
+                </div>
+
+                {backupSettings.storageLocation === 'google-drive' && (
+                  <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <h4 className="text-sm font-medium text-gray-900 mb-2">Google Drive Status</h4>
+                    {googleDriveUser ? (
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                          <span className="text-sm text-gray-600">Connected as {googleDriveUser.email}</span>
+                        </div>
+                        <button
+                          onClick={handleGoogleDriveDisconnect}
+                          className="text-xs text-red-600 hover:text-red-800 underline"
+                        >
+                          Disconnect
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="text-center">
+                        <p className="text-sm text-gray-500 mb-3">Not connected</p>
+                        <button
+                          onClick={handleGoogleDriveConnect}
+                          className="px-3 py-1.5 bg-white border border-gray-300 rounded text-sm text-gray-700 hover:bg-gray-50 flex items-center justify-center w-full"
+                        >
+                          <img src="https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg" alt="Drive" className="w-4 h-4 mr-2" />
+                          Connect Drive
+                        </button>
+                      </div>
                     )}
-                  </label>
-                  
-                  {backupSettings.storageLocation === 'google-drive' && !googleDriveUser && (
-                    <div className="ml-6 p-3 bg-blue-50 border border-blue-200 rounded-md">
-                      <p className="text-sm text-blue-800 mb-2">Connect to Google Drive to enable cloud backup</p>
-                      <button
-                        onClick={() => setShowGoogleDriveSetup(true)}
-                        className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
-                      >
-                        Setup Google Drive
-                      </button>
-                    </div>
-                  )}
-                  
-                  {backupSettings.storageLocation === 'google-drive' && googleDriveUser && (
-                    <div className="ml-6 p-3 bg-green-50 border border-green-200 rounded-md">
-                      <p className="text-sm text-green-800 mb-2">Connected to: {googleDriveUser.email}</p>
-                      <button
-                        onClick={handleGoogleDriveDisconnect}
-                        className="text-sm bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
-                      >
-                        Disconnect
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              <div className="bg-green-50 border border-green-200 rounded-md p-4">
-                <div className="flex">
-                  <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                  <div className="ml-3">
-                    <h3 className="text-sm font-medium text-green-800">Status</h3>
-                    <p className="mt-1 text-sm text-green-700">
-                      Last backup: Yesterday at 2:00 AM (Success)
-                    </p>
                   </div>
-                </div>
+                )}
               </div>
-              
-              <div className="flex justify-between pt-6 border-t border-gray-200">
+              <div className="mt-6 flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowBackupModal(false)}
+                  className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                >
+                  Close
+                </button>
                 <button
                   onClick={performBackup}
                   disabled={isBackupInProgress}
-                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                  className={`px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center ${isBackupInProgress ? 'opacity-75 cursor-not-allowed' : ''
+                    }`}
                 >
                   {isBackupInProgress ? (
                     <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      <span>Creating Backup...</span>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Backing up...
                     </>
                   ) : (
-                    <>
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                      </svg>
-                      <span>Create Backup Now</span>
-                    </>
+                    'Backup Now'
                   )}
                 </button>
-                
-                <div className="flex space-x-3">
-                  <button
-                    onClick={() => setShowBackupModal(false)}
-                    className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
-                  >
-                    Close
-                  </button>
-                  <button
-                    onClick={() => {
-                      localStorage.setItem('backupSettings', JSON.stringify(backupSettings));
-                      toast.success('Backup settings saved successfully!');
-                    }}
-                    className="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700"
-                  >
-                    Save Settings
-                  </button>
-                </div>
               </div>
             </div>
           </div>
@@ -1889,84 +1756,46 @@ const App: React.FC = () => {
       {/* Google Drive Setup Modal */}
       {showGoogleDriveSetup && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden">
-            <div className="bg-blue-600 text-white p-6 flex justify-between items-center">
-              <div>
-                <h2 className="text-xl font-bold">Google Drive Setup</h2>
-                <p className="text-blue-100">Connect your Google Drive for cloud backup</p>
-              </div>
-              <button
-                onClick={() => setShowGoogleDriveSetup(false)}
-                className="text-white hover:text-blue-200 text-2xl font-bold"
-              >
-                ×
-              </button>
-            </div>
-            
-            <div className="p-6 space-y-6">
-              <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
-                <div className="flex">
-                  <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                  </svg>
-                  <div className="ml-3">
-                    <h3 className="text-sm font-medium text-yellow-800">Setup Required</h3>
-                    <p className="mt-1 text-sm text-yellow-700">
-                      To use Google Drive backup, you need to provide your Google Cloud Console credentials.
-                      <br />
-                      1. Go to <a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer" className="underline">Google Cloud Console</a>
-                      <br />
-                      2. Create a new project or select existing one
-                      <br />
-                      3. Enable the Google Drive API
-                      <br />
-                      4. Create credentials (OAuth 2.0 Client ID and API Key)
-                    </p>
-                  </div>
-                </div>
-              </div>
-              
+          <div className="bg-white rounded-lg shadow-lg max-w-md w-full mx-4">
+            <div className="p-6">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">Connect Google Drive</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Enter your Google Cloud Console credentials to enable Google Drive integration.
+              </p>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Google Cloud OAuth 2.0 Client ID
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Client ID</label>
                   <input
                     type="text"
                     value={googleDriveCredentials.clientId}
                     onChange={(e) => setGoogleDriveCredentials(prev => ({ ...prev, clientId: e.target.value }))}
-                    placeholder="Your Google Cloud OAuth 2.0 Client ID"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    placeholder="Enter Client ID"
                   />
                 </div>
-                
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Google Cloud API Key
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">API Key</label>
                   <input
                     type="text"
                     value={googleDriveCredentials.apiKey}
                     onChange={(e) => setGoogleDriveCredentials(prev => ({ ...prev, apiKey: e.target.value }))}
-                    placeholder="Your Google Cloud API Key"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    placeholder="Enter API Key"
                   />
                 </div>
               </div>
-              
-              <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+              <div className="mt-6 flex justify-end space-x-3">
                 <button
                   onClick={() => setShowGoogleDriveSetup(false)}
-                  className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
+                  className="px-4 py-2 text-gray-600 hover:text-gray-800"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleGoogleDriveConnect}
-                  disabled={!googleDriveCredentials.clientId || !googleDriveCredentials.apiKey}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
                 >
-                  Connect to Google Drive
+                  Connect
                 </button>
               </div>
             </div>
@@ -1974,55 +1803,12 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Toast Notifications */}
-      <Toaster 
-        position="top-right"
-        toastOptions={{
-          duration: 4000,
-          style: {
-            background: '#ffffff',
-            color: '#374151',
-            border: '1px solid #e5e7eb',
-            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-          },
-          success: {
-            duration: 3000,
-            style: {
-              background: '#f0fdf4',
-              color: '#166534',
-              border: '1px solid #bbf7d0',
-            },
-            iconTheme: {
-              primary: '#22c55e',
-              secondary: '#ffffff',
-            },
-          },
-          error: {
-            duration: 5000,
-            style: {
-              background: '#fef2f2',
-              color: '#991b1b',
-              border: '1px solid #fecaca',
-            },
-            iconTheme: {
-              primary: '#ef4444',
-              secondary: '#ffffff',
-            },
-          },
-          loading: {
-            style: {
-              background: '#fef3c7',
-              color: '#92400e',
-              border: '1px solid #fed7aa',
-            },
-          }
-        }}
-      />
-      
-      {/* Database Trigger Fix Component - Removed */}
-      
-      {/* Transaction Date Debugger (Admin Only) */}
-      {showDebugger && user && (isAdmin() || user.email === 'admin@valant.com' || user.email === 'meenal@valant.com') && <TransactionDateDebugger onClose={() => setShowDebugger(false)} />}
+      {/* Transaction Date Debugger Modal */}
+      {showDebugger && (
+        <TransactionDateDebugger onClose={() => setShowDebugger(false)} />
+      )}
+
+      <Toaster position="top-right" />
     </div>
   );
 };

@@ -343,23 +343,8 @@ const OperationsLedger: React.FC = () => {
       let refunds: any[] = [];
       
       try {
-        const { data: refundData, error: refundError } = await supabase
-          .from('patient_refunds')
-          .select(`
-            *,
-            patient:patients(id, patient_id, first_name, last_name, age, gender, patient_tag, assigned_doctor, assigned_department, date_of_entry)
-          `)
-          .eq('hospital_id', '550e8400-e29b-41d4-a716-446655440000')
-          .gte('created_at', `${dateFrom}T00:00:00`)
-          .lte('created_at', `${dateTo}T23:59:59`)
-          .order('created_at', { ascending: false });
-        
-        if (refundError) {
-          console.warn('⚠️ Patient refunds table not accessible:', refundError.message);
-          refunds = [];
-        } else {
-          refunds = refundData || [];
-        }
+        const refundData = await ExactDateService.getPatientRefunds(dateFrom, dateTo);
+        refunds = refundData || [];
       } catch (error) {
         console.warn('⚠️ Refunds query failed, using empty array');
         refunds = [];

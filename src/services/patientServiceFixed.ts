@@ -1,4 +1,4 @@
-import { supabase } from '../config/supabase';
+import axios from 'axios';
 import type { Patient } from '../types/index';
 
 export interface CreatePatientData {
@@ -15,13 +15,28 @@ export interface CreatePatientData {
 
 export class FixedPatientService {
   
+  // =====================================================
+  // HELPERS
+  // =====================================================
+  
+  private static getHeaders() {
+    const token = localStorage.getItem('auth_token');
+    return { Authorization: `Bearer ${token}` };
+  }
+
+  private static getBaseUrl() {
+    return import.meta.env.VITE_API_URL || 'http://localhost:3002';
+  }
+  
   /**
    * Create patient with only columns that actually exist in your table
+   * Backend handles validation and minimal field logic
    */
   static async createPatient(patientData: CreatePatientData): Promise<Patient> {
-    
     try {
-      // Start with absolutely minimal data that should exist in any patients table
+      console.log('👤 Creating patient via backend API:', patientData);
+      
+      // Build minimal data
       const minimalData = {
         first_name: patientData.first_name?.trim() || 'Unknown',
       };
@@ -39,72 +54,65 @@ export class FixedPatientService {
 
       const finalData = { ...minimalData, ...optionalData };
 
-      // Try insertion
-      const { data, error } = await supabase
-        .from('patients')
-        .insert([finalData])
-        .select()
-        .single();
+      console.log('📤 Sending data to backend:', finalData);
 
-      if (error) {
+      // Try insertion via backend
+      const response = await axios.post(`${this.getBaseUrl()}/api/patients`, finalData, {
+        headers: this.getHeaders()
+      });
+
+      console.log('✅ Patient created successfully:', response.data);
+      return response.data as Patient;
+
+    } catch (error: any) {
+      console.error('❌ Patient creation failed:', error);
+      console.error('Error response:', error.response?.data);
+      
+      // If backend returns column error, try ultra minimal
+      if (error.response?.data?.message?.includes('column')) {
+        console.log('🔄 Trying ultra minimal patient data...');
         
-        // If it's still a column error, try even more minimal
-        if (error.message.includes('column') && error.message.includes('does not exist')) {
-          
+        try {
           const ultraMinimal = {
             first_name: patientData.first_name?.trim() || 'Unknown',
           };
           
-          const { data: ultraData, error: ultraError } = await supabase
-            .from('patients')
-            .insert([ultraMinimal])
-            .select()
-            .single();
-            
-          if (ultraError) {
-            throw new Error(`Even minimal insertion failed: ${ultraError.message}`);
-          }
+          const ultraResponse = await axios.post(`${this.getBaseUrl()}/api/patients`, ultraMinimal, {
+            headers: this.getHeaders()
+          });
           
-          return ultraData as Patient;
+          console.log('✅ Ultra minimal patient created:', ultraResponse.data);
+          return ultraResponse.data as Patient;
+        } catch (ultraError: any) {
+          console.error('❌ Even minimal insertion failed:', ultraError);
+          throw new Error(`Even minimal insertion failed: ${ultraError.response?.data?.message || ultraError.message}`);
         }
-        
-        throw new Error(`Database error: ${error.message}`);
       }
-
-      return data as Patient;
-
-    } catch (error: any) {
-      throw new Error(`Patient creation failed: ${error.message}`);
+      
+      throw new Error(`Patient creation failed: ${error.response?.data?.message || error.message}`);
     }
   }
 
   /**
-   * Get the actual table structure
+   * Get the actual table structure (for debugging)
    */
   static async getTableStructure(): Promise<any> {
     try {
+      console.log('🔍 Getting table structure from backend...');
       
-      // Try to get one record to see actual structure
-      const { data, error } = await supabase
-        .from('patients')
-        .select('*')
-        .limit(1);
+      const response = await axios.get(`${this.getBaseUrl()}/api/debug/patients/structure`, {
+        headers: this.getHeaders()
+      });
 
-      if (error) {
-        return { error: error.message, columns: [] };
-      }
-
-      const columns = data && data.length > 0 ? Object.keys(data[0]) : [];
-      
-      return {
-        success: true,
-        columns: columns,
-        sampleRecord: data?.[0] || null,
-        totalRecords: data?.length || 0
-      };
+      console.log('✅ Table structure:', response.data);
+      return response.data;
 
     } catch (error: any) {
-      return { error: error.message, columns: [] };
+      console.error('❌ Error getting table structure:', error);
+      return { 
+        error: error.response?.data?.message || error.message, 
+        columns: [] 
+      };
     }
   }
 
@@ -113,13 +121,18 @@ export class FixedPatientService {
    */
   static async testColumnExists(columnName: string): Promise<boolean> {
     try {
-      const { data, error } = await supabase
-        .from('patients')
-        .select(columnName)
-        .limit(1);
+      console.log(`🔍 Testing if column '${columnName}' exists...`);
+      
+      const response = await axios.get(`${this.getBaseUrl()}/api/debug/patients/column-exists`, {
+        headers: this.getHeaders(),
+        params: { column: columnName }
+      });
 
-      return !error;
-    } catch {
+      const exists = response.data.exists || false;
+      console.log(`${exists ? '✅' : '❌'} Column '${columnName}' ${exists ? 'exists' : 'does not exist'}`);
+      return exists;
+    } catch (error) {
+      console.error(`❌ Error testing column '${columnName}':`, error);
       return false;
     }
   }

@@ -1,5 +1,7 @@
 // Billing Service for managing OPD and IPD bills across components
+import axios from 'axios';
 import { logger } from '../utils/logger';
+
 export interface OPDBill {
   id: string;
   billId: string;
@@ -74,8 +76,16 @@ export interface BillingSummary {
 }
 
 class BillingService {
-  private static readonly OPD_BILLS_KEY = 'hospital_opd_bills';
-  private static readonly IPD_BILLS_KEY = 'hospital_ipd_bills';
+  
+  // Helper methods
+  private static getHeaders() {
+    const token = localStorage.getItem('auth_token');
+    return { Authorization: `Bearer ${token}` };
+  }
+
+  private static getBaseUrl() {
+    return import.meta.env.VITE_API_URL || 'http://localhost:3002';
+  }
   
   // Event listeners for bill updates
   private static listeners: Array<() => void> = [];
@@ -94,31 +104,35 @@ class BillingService {
   }
 
   // OPD Bills Management
-  static getOPDBills(): OPDBill[] {
+  static async getOPDBills(): Promise<OPDBill[]> {
     try {
-      const bills = localStorage.getItem(this.OPD_BILLS_KEY);
-      return bills ? JSON.parse(bills) : [];
+      const response = await axios.get(`${this.getBaseUrl()}/api/billing/opd`, {
+        headers: this.getHeaders()
+      });
+      
+      return response.data || [];
     } catch (error) {
       logger.error('Failed to load OPD bills:', error);
       return [];
     }
   }
 
-  static saveOPDBill(bill: OPDBill): void {
+  static async saveOPDBill(bill: OPDBill): Promise<void> {
     try {
-      const bills = this.getOPDBills();
-      const existingIndex = bills.findIndex(b => b.id === bill.id);
-      
-      if (existingIndex >= 0) {
-        bills[existingIndex] = bill;
+      if (bill.id) {
+        // Update existing bill
+        await axios.put(`${this.getBaseUrl()}/api/billing/opd/${bill.id}`, bill, {
+          headers: this.getHeaders()
+        });
         logger.log('📝 Updated existing OPD bill:', bill.billId);
       } else {
-        bills.unshift(bill);
+        // Create new bill
+        await axios.post(`${this.getBaseUrl()}/api/billing/opd`, bill, {
+          headers: this.getHeaders()
+        });
         logger.log('➕ Added new OPD bill:', bill.billId);
       }
       
-      localStorage.setItem(this.OPD_BILLS_KEY, JSON.stringify(bills));
-      logger.log('💾 Saved OPD bills to localStorage. Total bills:', bills.length);
       this.notifyListeners();
       logger.log('📢 Notified listeners of OPD bill change');
     } catch (error) {
@@ -127,10 +141,12 @@ class BillingService {
     }
   }
 
-  static deleteOPDBill(billId: string): void {
+  static async deleteOPDBill(billId: string): Promise<void> {
     try {
-      const bills = this.getOPDBills().filter(bill => bill.id !== billId);
-      localStorage.setItem(this.OPD_BILLS_KEY, JSON.stringify(bills));
+      await axios.delete(`${this.getBaseUrl()}/api/billing/opd/${billId}`, {
+        headers: this.getHeaders()
+      });
+      
       this.notifyListeners();
     } catch (error) {
       logger.error('Failed to delete OPD bill:', error);
@@ -139,28 +155,33 @@ class BillingService {
   }
 
   // IPD Bills Management
-  static getIPDBills(): IPDBill[] {
+  static async getIPDBills(): Promise<IPDBill[]> {
     try {
-      const bills = localStorage.getItem(this.IPD_BILLS_KEY);
-      return bills ? JSON.parse(bills) : [];
+      const response = await axios.get(`${this.getBaseUrl()}/api/billing/ipd`, {
+        headers: this.getHeaders()
+      });
+      
+      return response.data || [];
     } catch (error) {
       logger.error('Failed to load IPD bills:', error);
       return [];
     }
   }
 
-  static saveIPDBill(bill: IPDBill): void {
+  static async saveIPDBill(bill: IPDBill): Promise<void> {
     try {
-      const bills = this.getIPDBills();
-      const existingIndex = bills.findIndex(b => b.id === bill.id);
-      
-      if (existingIndex >= 0) {
-        bills[existingIndex] = bill;
+      if (bill.id) {
+        // Update existing bill
+        await axios.put(`${this.getBaseUrl()}/api/billing/ipd/${bill.id}`, bill, {
+          headers: this.getHeaders()
+        });
       } else {
-        bills.unshift(bill);
+        // Create new bill
+        await axios.post(`${this.getBaseUrl()}/api/billing/ipd`, bill, {
+          headers: this.getHeaders()
+        });
       }
       
-      localStorage.setItem(this.IPD_BILLS_KEY, JSON.stringify(bills));
       this.notifyListeners();
     } catch (error) {
       logger.error('Failed to save IPD bill:', error);
@@ -168,10 +189,12 @@ class BillingService {
     }
   }
 
-  static deleteIPDBill(billId: string): void {
+  static async deleteIPDBill(billId: string): Promise<void> {
     try {
-      const bills = this.getIPDBills().filter(bill => bill.id !== billId);
-      localStorage.setItem(this.IPD_BILLS_KEY, JSON.stringify(bills));
+      await axios.delete(`${this.getBaseUrl()}/api/billing/ipd/${billId}`, {
+        headers: this.getHeaders()
+      });
+      
       this.notifyListeners();
     } catch (error) {
       logger.error('Failed to delete IPD bill:', error);
@@ -180,85 +203,93 @@ class BillingService {
   }
 
   // Combined Bills Data
-  static getAllRecentBills(): RecentBill[] {
-    const opdBills = this.getOPDBills();
-    const ipdBills = this.getIPDBills();
-    
-    logger.log('🔍 Getting all recent bills - OPD:', opdBills.length, 'IPD:', ipdBills.length);
-    
-    const recentBills: RecentBill[] = [
-      ...opdBills.map(bill => ({
-        id: bill.id,
-        billId: bill.billId,
-        patientName: bill.patientName,
-        type: 'OPD' as const,
-        amount: bill.totalAmount,
-        status: bill.status,
-        date: bill.billDate
-      })),
-      ...ipdBills.map(bill => ({
-        id: bill.id,
-        billId: bill.billId,
-        patientName: bill.patientName,
-        type: 'IPD' as const,
-        amount: bill.totalAmount,
-        status: bill.status,
-        date: bill.billDate
-      }))
-    ];
+  static async getAllRecentBills(): Promise<RecentBill[]> {
+    try {
+      logger.log('🔍 Getting all recent bills from backend...');
+      
+      const response = await axios.get(`${this.getBaseUrl()}/api/billing/recent`, {
+        headers: this.getHeaders()
+      });
 
-    logger.log('📋 Total recent bills:', recentBills.length);
-    
-    // Sort by date (newest first)
-    const sortedBills = recentBills.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    logger.log('📊 Sorted recent bills:', sortedBills.length);
-    return sortedBills;
+      const recentBills = response.data || [];
+      logger.log('📋 Total recent bills:', recentBills.length);
+      
+      return recentBills;
+    } catch (error) {
+      logger.error('Failed to load recent bills:', error);
+      return [];
+    }
   }
 
   // Dashboard Summary
-  static getBillingSummary(): BillingSummary {
-    const opdBills = this.getOPDBills();
-    const ipdBills = this.getIPDBills();
-    
-    const totalOPDRevenue = opdBills
-      .filter(bill => bill.status === 'PAID')
-      .reduce((sum, bill) => sum + bill.totalAmount, 0);
-    
-    const totalIPDRevenue = ipdBills
-      .filter(bill => bill.status === 'PAID')
-      .reduce((sum, bill) => sum + bill.totalAmount, 0);
+  static async getBillingSummary(): Promise<BillingSummary> {
+    try {
+      const response = await axios.get(`${this.getBaseUrl()}/api/billing/summary`, {
+        headers: this.getHeaders()
+      });
 
-    const pendingOPDBills = opdBills.filter(bill => bill.status === 'PENDING').length;
-    const pendingIPDBills = ipdBills.filter(bill => bill.status === 'PENDING').length;
-
-    return {
-      totalRevenue: totalOPDRevenue + totalIPDRevenue,
-      opdBills: opdBills.length,
-      ipdBills: ipdBills.length,
-      pendingBills: pendingOPDBills + pendingIPDBills
-    };
+      return response.data || {
+        totalRevenue: 0,
+        opdBills: 0,
+        ipdBills: 0,
+        pendingBills: 0
+      };
+    } catch (error) {
+      logger.error('Failed to load billing summary:', error);
+      return {
+        totalRevenue: 0,
+        opdBills: 0,
+        ipdBills: 0,
+        pendingBills: 0
+      };
+    }
   }
 
   // Generate Bill ID
-  static generateOPDBillId(): string {
-    const opdBills = this.getOPDBills();
-    const year = new Date().getFullYear();
-    const sequence = opdBills.length + 1;
-    return `OPD-${year}-${String(sequence).padStart(4, '0')}`;
+  static async generateOPDBillId(): Promise<string> {
+    try {
+      const response = await axios.get(`${this.getBaseUrl()}/api/billing/opd/next-id`, {
+        headers: this.getHeaders()
+      });
+      
+      return response.data.billId;
+    } catch (error) {
+      logger.error('Failed to generate OPD bill ID:', error);
+      // Fallback
+      const year = new Date().getFullYear();
+      const random = Math.floor(Math.random() * 10000);
+      return `OPD-${year}-${String(random).padStart(4, '0')}`;
+    }
   }
 
-  static generateIPDBillId(): string {
-    const ipdBills = this.getIPDBills();
-    const year = new Date().getFullYear();
-    const sequence = ipdBills.length + 1;
-    return `IPD-${year}-${String(sequence).padStart(4, '0')}`;
+  static async generateIPDBillId(): Promise<string> {
+    try {
+      const response = await axios.get(`${this.getBaseUrl()}/api/billing/ipd/next-id`, {
+        headers: this.getHeaders()
+      });
+      
+      return response.data.billId;
+    } catch (error) {
+      logger.error('Failed to generate IPD bill ID:', error);
+      // Fallback
+      const year = new Date().getFullYear();
+      const random = Math.floor(Math.random() * 10000);
+      return `IPD-${year}-${String(random).padStart(4, '0')}`;
+    }
   }
 
   // Clear all bills (for development/testing)
-  static clearAllBills(): void {
-    localStorage.removeItem(this.OPD_BILLS_KEY);
-    localStorage.removeItem(this.IPD_BILLS_KEY);
-    this.notifyListeners();
+  static async clearAllBills(): Promise<void> {
+    try {
+      await axios.delete(`${this.getBaseUrl()}/api/billing/clear-all`, {
+        headers: this.getHeaders()
+      });
+      
+      this.notifyListeners();
+    } catch (error) {
+      logger.error('Failed to clear all bills:', error);
+      throw new Error('Failed to clear all bills');
+    }
   }
 }
 

@@ -1,4 +1,4 @@
-import { supabase } from '../config/supabase';
+import axios from 'axios';
 
 export interface Medicine {
   id: string;
@@ -29,30 +29,31 @@ export interface CreateMedicineData {
 }
 
 class MedicineService {
+  
+  // =====================================================
+  // HELPERS
+  // =====================================================
+  
+  private getHeaders() {
+    const token = localStorage.getItem('auth_token');
+    return { Authorization: `Bearer ${token}` };
+  }
+
+  private getBaseUrl() {
+    return import.meta.env.VITE_API_URL || 'http://localhost:3002';
+  }
+
   /**
    * Get all active medicines with search functionality
    */
   async getMedicines(searchTerm?: string): Promise<Medicine[]> {
     try {
-      let query = supabase
-        .from('medicines')
-        .select('*')
-        .eq('is_active', true)
-        .order('usage_count', { ascending: false })
-        .order('name', { ascending: true });
+      const response = await axios.get(`${this.getBaseUrl()}/api/medicines`, {
+        headers: this.getHeaders(),
+        params: { search: searchTerm }
+      });
 
-      if (searchTerm) {
-        query = query.ilike('name', `%${searchTerm}%`);
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Error fetching medicines:', error);
-        throw error;
-      }
-
-      return data || [];
+      return response.data || [];
     } catch (error) {
       console.error('Exception in getMedicines:', error);
       throw error;
@@ -64,21 +65,12 @@ class MedicineService {
    */
   async searchMedicines(searchTerm: string, limit = 50): Promise<Medicine[]> {
     try {
-      const { data, error } = await supabase
-        .from('medicines')
-        .select('*')
-        .eq('is_active', true)
-        .ilike('name', `%${searchTerm}%`)
-        .order('usage_count', { ascending: false })
-        .order('name', { ascending: true })
-        .limit(limit);
+      const response = await axios.get(`${this.getBaseUrl()}/api/medicines/search`, {
+        headers: this.getHeaders(),
+        params: { q: searchTerm, limit }
+      });
 
-      if (error) {
-        console.error('Error searching medicines:', error);
-        throw error;
-      }
-
-      return data || [];
+      return response.data || [];
     } catch (error) {
       console.error('Exception in searchMedicines:', error);
       throw error;
@@ -90,20 +82,12 @@ class MedicineService {
    */
   async getPopularMedicines(limit = 20): Promise<Medicine[]> {
     try {
-      const { data, error } = await supabase
-        .from('medicines')
-        .select('*')
-        .eq('is_active', true)
-        .order('usage_count', { ascending: false })
-        .order('name', { ascending: true })
-        .limit(limit);
+      const response = await axios.get(`${this.getBaseUrl()}/api/medicines/popular`, {
+        headers: this.getHeaders(),
+        params: { limit }
+      });
 
-      if (error) {
-        console.error('Error fetching popular medicines:', error);
-        throw error;
-      }
-
-      return data || [];
+      return response.data || [];
     } catch (error) {
       console.error('Exception in getPopularMedicines:', error);
       throw error;
@@ -115,24 +99,17 @@ class MedicineService {
    */
   async createMedicine(medicineData: CreateMedicineData): Promise<Medicine> {
     try {
-      const { data, error } = await supabase
-        .from('medicines')
-        .insert({
-          ...medicineData,
-          category: medicineData.category || 'general',
-          is_custom: medicineData.is_custom || true,
-          usage_count: 1
-        })
-        .select()
-        .single();
+      const response = await axios.post(`${this.getBaseUrl()}/api/medicines`, {
+        ...medicineData,
+        category: medicineData.category || 'general',
+        is_custom: medicineData.is_custom ?? true,
+        usage_count: 1
+      }, {
+        headers: this.getHeaders()
+      });
 
-      if (error) {
-        console.error('Error creating medicine:', error);
-        throw error;
-      }
-
-      console.log('✅ Medicine created successfully:', data);
-      return data;
+      console.log('✅ Medicine created successfully:', response.data);
+      return response.data;
     } catch (error) {
       console.error('Exception in createMedicine:', error);
       throw error;
@@ -144,18 +121,9 @@ class MedicineService {
    */
   async incrementUsageCount(medicineId: string): Promise<void> {
     try {
-      const { error } = await supabase
-        .from('medicines')
-        .update({
-          usage_count: supabase.raw('usage_count + 1'),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', medicineId);
-
-      if (error) {
-        console.error('Error incrementing usage count:', error);
-        // Don't throw error for usage count update failures
-      }
+      await axios.post(`${this.getBaseUrl()}/api/medicines/${medicineId}/increment-usage`, {}, {
+        headers: this.getHeaders()
+      });
     } catch (error) {
       console.error('Exception in incrementUsageCount:', error);
       // Don't throw error for usage count update failures
@@ -167,19 +135,12 @@ class MedicineService {
    */
   async medicineExists(name: string): Promise<boolean> {
     try {
-      const { data, error } = await supabase
-        .from('medicines')
-        .select('id')
-        .ilike('name', name)
-        .eq('is_active', true)
-        .limit(1);
+      const response = await axios.get(`${this.getBaseUrl()}/api/medicines/exists`, {
+        headers: this.getHeaders(),
+        params: { name }
+      });
 
-      if (error) {
-        console.error('Error checking medicine existence:', error);
-        return false;
-      }
-
-      return data && data.length > 0;
+      return response.data.exists || false;
     } catch (error) {
       console.error('Exception in medicineExists:', error);
       return false;
@@ -191,21 +152,18 @@ class MedicineService {
    */
   async getMedicineByName(name: string): Promise<Medicine | null> {
     try {
-      const { data, error } = await supabase
-        .from('medicines')
-        .select('*')
-        .ilike('name', name)
-        .eq('is_active', true)
-        .limit(1);
+      const response = await axios.get(`${this.getBaseUrl()}/api/medicines/by-name`, {
+        headers: this.getHeaders(),
+        params: { name }
+      });
 
-      if (error) {
-        console.error('Error fetching medicine by name:', error);
-        throw error;
-      }
-
-      return data && data.length > 0 ? data[0] : null;
-    } catch (error) {
+      return response.data || null;
+    } catch (error: any) {
       console.error('Exception in getMedicineByName:', error);
+      // Return null if not found
+      if (error.response?.status === 404) {
+        return null;
+      }
       throw error;
     }
   }
@@ -215,22 +173,11 @@ class MedicineService {
    */
   async updateMedicine(id: string, updates: Partial<CreateMedicineData>): Promise<Medicine> {
     try {
-      const { data, error } = await supabase
-        .from('medicines')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', id)
-        .select()
-        .single();
+      const response = await axios.put(`${this.getBaseUrl()}/api/medicines/${id}`, updates, {
+        headers: this.getHeaders()
+      });
 
-      if (error) {
-        console.error('Error updating medicine:', error);
-        throw error;
-      }
-
-      return data;
+      return response.data;
     } catch (error) {
       console.error('Exception in updateMedicine:', error);
       throw error;
@@ -242,18 +189,9 @@ class MedicineService {
    */
   async deactivateMedicine(id: string): Promise<void> {
     try {
-      const { error } = await supabase
-        .from('medicines')
-        .update({
-          is_active: false,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', id);
-
-      if (error) {
-        console.error('Error deactivating medicine:', error);
-        throw error;
-      }
+      await axios.delete(`${this.getBaseUrl()}/api/medicines/${id}`, {
+        headers: this.getHeaders()
+      });
     } catch (error) {
       console.error('Exception in deactivateMedicine:', error);
       throw error;
@@ -265,20 +203,11 @@ class MedicineService {
    */
   async getMedicinesByCategory(category: string): Promise<Medicine[]> {
     try {
-      const { data, error } = await supabase
-        .from('medicines')
-        .select('*')
-        .eq('is_active', true)
-        .eq('category', category)
-        .order('usage_count', { ascending: false })
-        .order('name', { ascending: true });
+      const response = await axios.get(`${this.getBaseUrl()}/api/medicines/category/${category}`, {
+        headers: this.getHeaders()
+      });
 
-      if (error) {
-        console.error('Error fetching medicines by category:', error);
-        throw error;
-      }
-
-      return data || [];
+      return response.data || [];
     } catch (error) {
       console.error('Exception in getMedicinesByCategory:', error);
       throw error;
