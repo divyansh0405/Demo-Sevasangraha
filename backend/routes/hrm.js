@@ -62,7 +62,7 @@ router.get('/leave-types', authenticateToken, async (req, res) => {
 router.post('/leaves/apply', authenticateToken, async (req, res) => {
   try {
     const { employee_id, leave_type_id, start_date, end_date, reason } = req.body;
-    
+
     // Calculate total days (simplified)
     const start = new Date(start_date);
     const end = new Date(end_date);
@@ -115,4 +115,126 @@ router.get('/leaves/my-leaves', authenticateToken, async (req, res) => {
   }
 });
 
+// ==================== RBAC - ROLES & PERMISSIONS ====================
+
+// Get all roles
+router.get('/roles', authenticateToken, async (req, res) => {
+  try {
+    const result = await db.query('SELECT * FROM roles ORDER BY name');
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching roles:', error);
+    // Return empty array if table doesn't exist
+    if (error.code === '42P01') {
+      return res.json([]);
+    }
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Get all permissions
+router.get('/permissions', authenticateToken, async (req, res) => {
+  try {
+    const result = await db.query('SELECT * FROM permissions ORDER BY module, code');
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching permissions:', error);
+    if (error.code === '42P01') {
+      return res.json([]);
+    }
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Get permissions for a specific role
+router.get('/role-permissions/:roleId', authenticateToken, async (req, res) => {
+  try {
+    const { roleId } = req.params;
+    const result = await db.query(
+      'SELECT permission_id FROM role_permissions WHERE role_id = $1',
+      [roleId]
+    );
+    res.json(result.rows.map(r => r.permission_id));
+  } catch (error) {
+    console.error('Error fetching role permissions:', error);
+    if (error.code === '42P01') {
+      return res.json([]);
+    }
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Update permissions for a role
+router.put('/role-permissions/:roleId', authenticateToken, async (req, res) => {
+  try {
+    const { roleId } = req.params;
+    const { permissionIds } = req.body;
+
+    // Delete existing permissions
+    await db.query('DELETE FROM role_permissions WHERE role_id = $1', [roleId]);
+
+    // Insert new permissions
+    if (permissionIds && permissionIds.length > 0) {
+      const values = permissionIds.map((pid, idx) => `($1, $${idx + 2})`).join(', ');
+      await db.query(
+        `INSERT INTO role_permissions (role_id, permission_id) VALUES ${values}`,
+        [roleId, ...permissionIds]
+      );
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error updating role permissions:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Get user permissions by userId or email
+router.get('/user-permissions', authenticateToken, async (req, res) => {
+  try {
+    const { userId, email } = req.query;
+    let roleId = null;
+
+    // Try to find employee by email first
+    if (email) {
+      const empByEmail = await db.query(
+        'SELECT role_id FROM employee_master WHERE work_email = $1',
+        [email]
+      );
+      if (empByEmail.rows.length > 0) {
+        roleId = empByEmail.rows[0].role_id;
+      }
+    }
+
+    // Try by ID if email didn't work
+    if (!roleId && userId) {
+      const empById = await db.query(
+        'SELECT role_id FROM employee_master WHERE id = $1',
+        [userId]
+      );
+      if (empById.rows.length > 0) {
+        roleId = empById.rows[0].role_id;
+      }
+    }
+
+    if (!roleId) {
+      return res.json([]);
+    }
+
+    // Get permissions for the role
+    const result = await db.query(
+      `SELECT p.code FROM role_permissions rp
+       JOIN permissions p ON rp.permission_id = p.id
+       WHERE rp.role_id = $1`,
+      [roleId]
+    );
+
+    res.json(result.rows.map(r => r.code));
+  } catch (error) {
+    console.error('Error fetching user permissions:', error);
+    res.json([]);
+  }
+});
+
 module.exports = router;
+
