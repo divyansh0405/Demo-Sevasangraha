@@ -7,7 +7,7 @@ import { Input } from './ui/Input';
 import ModernDatePicker from './ui/ModernDatePicker';
 import EditPatientModal from './EditPatientModal';
 import Receipt from './Receipt';
-import ValantPrescription from './ValantPrescription';
+import SevasangrahaPrescription from './SevasangrahaPrescription';
 import VHPrescription from './VHPrescription';
 import MultiplePrescriptionGenerator from './MultiplePrescriptionGenerator';
 import PatientServiceManager from './PatientServiceManager';
@@ -543,7 +543,7 @@ const ComprehensivePatientList: React.FC<ComprehensivePatientListProps> = ({ onN
   const [showEditModal, setShowEditModal] = useState(false);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [selectedPatientForReceipt, setSelectedPatientForReceipt] = useState<PatientWithRelations | null>(null);
-  const [showValantPrescription, setShowValantPrescription] = useState(false);
+  const [showSevasangrahaPrescription, setShowSevasangrahaPrescription] = useState(false);
   const [showVHPrescription, setShowVHPrescription] = useState(false);
   const [showMultiplePrescription, setShowMultiplePrescription] = useState(false);
   const [multiplePrescriptionType, setMultiplePrescriptionType] = useState<'valant' | 'vh'>('valant');
@@ -1101,7 +1101,7 @@ const ComprehensivePatientList: React.FC<ComprehensivePatientListProps> = ({ onN
     } else {
       // Use single prescription (original behavior)
       if (template === 'valant') {
-        setShowValantPrescription(true);
+        setShowSevasangrahaPrescription(true);
       } else if (template === 'vh') {
         setShowVHPrescription(true);
       }
@@ -1784,11 +1784,11 @@ const ComprehensivePatientList: React.FC<ComprehensivePatientListProps> = ({ onN
       )}
 
       {/* Valant Prescription Modal */}
-      {showValantPrescription && selectedPatientForPrescription && (
-        <ValantPrescription
+      {showSevasangrahaPrescription && selectedPatientForPrescription && (
+        <SevasangrahaPrescription
           patient={selectedPatientForPrescription}
           onClose={() => {
-            setShowValantPrescription(false);
+            setShowSevasangrahaPrescription(false);
             setSelectedPatientForPrescription(null);
           }}
         />

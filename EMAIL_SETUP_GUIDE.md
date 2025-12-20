@@ -14,7 +14,7 @@ The Hospital CRM now supports email functionality for sending receipts, prescrip
 
 ### **Features**
 - 📧 Send receipts for selected transactions
-- 📝 Professional email templates with Valant Hospital branding
+- 📝 Professional email templates with Sevasangraha Hospital branding
 - 📊 Document selection (Receipt, Prescription, Reports)
 - 📋 Email logging for tracking
 - ✉️ Beautiful HTML formatted emails
@@ -85,8 +85,8 @@ Update your `.env` file:
 # Email Configuration (Resend)
 VITE_EMAIL_ENABLED=true
 VITE_EMAIL_API_KEY=re_your_api_key_here
-VITE_EMAIL_FROM=noreply@valanthospital.com
-VITE_EMAIL_FROM_NAME=Valant Hospital
+VITE_EMAIL_FROM=noreply@sevasangraha.com
+VITE_EMAIL_FROM_NAME=Sevasangraha Hospital
 ```
 
 **Important Notes:**
@@ -141,11 +141,11 @@ This creates the `email_logs` table for tracking sent emails.
 
 ### **Receipt Email**
 ```
-Subject: Receipt #RCP123456 - Valant Hospital
+Subject: Receipt #RCP123456 - Sevasangraha Hospital
 
 Dear Mr. John Doe,
 
-Thank you for choosing Valant Hospital. Please find your receipt attached below.
+Thank you for choosing Sevasangraha Hospital. Please find your receipt attached below.
 
 [Receipt Details]
 
@@ -156,7 +156,7 @@ Total Amount: ₹1,500
 If you have any questions, please contact us.
 
 Best regards,
-Valant Hospital Team
+Sevasangraha Hospital Team
 ```
 
 ## 🔒 Security & Privacy

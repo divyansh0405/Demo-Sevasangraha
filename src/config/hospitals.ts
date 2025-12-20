@@ -23,19 +23,19 @@ export interface HospitalConfig {
  * Each hospital has its own Supabase database
  */
 export const hospitalConfigs: Record<string, HospitalConfig> = {
-  'valant-shobhagpura': {
+  'sevasangraha-shobhagpura': {
     id: '550e8400-e29b-41d4-a716-446655440000',
-    code: 'VALANT',
-    name: 'valant-shobhagpura',
-    displayName: 'Valant Shobhagpura',
+    code: 'SEVASANGRAHA',
+    name: 'sevasangraha-shobhagpura',
+    displayName: 'Sevasangraha Shobhagpura',
     supabaseUrl: import.meta.env.VITE_SUPABASE_URL || 'https://oghqwddhojnryovmfvzc.supabase.co',
     supabaseAnonKey: import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9naHF3ZGRob2pucnlvdm1mdnpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMxMTQ1NDEsImV4cCI6MjA2ODY5MDU0MX0.NVvYQFtqIg8OV-vvkAhCNFC_uMC1SBJDSKcLHRjf5w0',
     logo: '/logo.png',
     themeColor: '#0056B3',
     address: '10, Madhav Vihar Shobhagpura, Udaipur (313001)',
     phone: '+91 9119118000',
-    email: 'valanthospital@gmail.com',
-    website: 'www.valanthospital.com'
+    email: 'sevasangrahahospital@gmail.com',
+    website: 'www.sevasangrahahospital.com'
   },
 
   'bhilwara': {

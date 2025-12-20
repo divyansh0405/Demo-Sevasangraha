@@ -51,7 +51,7 @@
 
 ### Why Domain Verification?
 - ✅ Send to **ANY email address** without verification
-- ✅ Professional emails from your domain (e.g., noreply@valanthospital.com)
+- ✅ Professional emails from your domain (e.g., noreply@sevasangraha.com)
 - ✅ Better deliverability and trust
 - ✅ No per-email verification needed
 - ✅ Scalable for production
@@ -61,7 +61,7 @@
 #### Step 1: Get a Domain
 If you don't have a domain:
 - Purchase from: Namecheap, GoDaddy, Google Domains, etc.
-- Example: `valanthospital.com` or `valanthospital.in`
+- Example: `sevasangraha.com` or `sevasangraha.in`
 - Cost: ₹500-1000/year
 
 #### Step 2: Add Domain to Resend
@@ -70,7 +70,7 @@ If you don't have a domain:
    - Go to: https://resend.com/domains
 
 2. **Click "Add Domain"**
-   - Enter your domain (e.g., `valanthospital.com`)
+   - Enter your domain (e.g., `sevasangraha.com`)
    - Click "Add Domain"
 
 3. **Get DNS Records**
@@ -124,10 +124,10 @@ Once domain is verified, update your `.env` file:
 
 ```env
 # Change from default Resend address
-VITE_EMAIL_FROM=noreply@valanthospital.com
+VITE_EMAIL_FROM=noreply@sevasangraha.com
 
 # Or use a custom name
-VITE_EMAIL_FROM=receipts@valanthospital.com
+VITE_EMAIL_FROM=receipts@sevasangraha.com
 ```
 
 Restart your development server:

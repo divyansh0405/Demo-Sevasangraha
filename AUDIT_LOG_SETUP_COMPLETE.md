@@ -35,7 +35,7 @@ When a frontdesk user edits a patient:
 
 ### Step 2: View the Audit Log as Admin
 1. Log out from frontdesk
-2. Log in as admin (admin@valant.com or meenal@valant.com)
+2. Log in as admin (admin@indic.com or meenal@indic.com)
 3. Click the **"🔍 Audit Log"** tab
 4. You should now see the edit!
 

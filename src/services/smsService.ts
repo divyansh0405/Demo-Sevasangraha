@@ -151,7 +151,7 @@ Doctor: Dr. ${doctorName}
 
 Thank you for choosing our hospital.
 
-- Valant Hospital`;
+- Sevasangraha`;
 
     const result = await this.sendViaTwilio(formattedPhone, message);
 
@@ -188,7 +188,7 @@ Thank you for choosing our hospital.
 
     const message = `Dear ${patientName},
 
-Welcome to Valant Hospital!
+Welcome to Sevasangraha!
 
 Registration No: ${registrationNo}
 Date: ${registrationDate}
@@ -199,7 +199,7 @@ Your registration is complete. Please keep your registration number for future r
 
 Thank you!
 
-- Valant Hospital`;
+- Sevasangraha`;
 
     const result = await this.sendViaTwilio(formattedPhone, message);
 
@@ -243,7 +243,7 @@ Doctor: Dr. ${doctorName}
 
 Please arrive 15 minutes early.
 
-- Valant Hospital`;
+- Sevasangraha`;
 
     const result = await this.sendViaTwilio(formattedPhone, message);
 

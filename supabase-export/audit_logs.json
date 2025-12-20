@@ -1,0 +1,1992 @@
+[
+  {
+    "id": "4e0bad48-dfb2-41f9-999d-8747f53428c4",
+    "user_id": "fb2037ba-7982-4b13-8524-e9fc5b42ca5a",
+    "user_email": "frontdesk@valant.com",
+    "user_role": "STAFF",
+    "user_name": "User Staff",
+    "action_type": "UPDATE",
+    "table_name": "patients",
+    "record_id": "02b33812-809d-40ba-8076-ea3a6a13e99b",
+    "section_name": "Patient List",
+    "field_changes": {
+      "email": {
+        "old": null
+      },
+      "phone": {
+        "new": "36324123",
+        "old": "748754245"
+      },
+      "allergies": {
+        "old": null
+      },
+      "blood_group": {
+        "old": null
+      },
+      "date_of_birth": {
+        "old": null
+      },
+      "reference_details": {
+        "old": null
+      },
+      "current_medications": {
+        "old": null
+      }
+    },
+    "old_values": {
+      "age": "21",
+      "email": null,
+      "phone": "748754245",
+      "gender": "FEMALE",
+      "prefix": "Mrs",
+      "address": "",
+      "allergies": null,
+      "last_name": "BHATT",
+      "first_name": "POOJA",
+      "blood_group": null,
+      "patient_tag": "Jain Community",
+      "date_of_birth": null,
+      "date_of_entry": "2025-09-18",
+      "has_reference": false,
+      "assigned_doctor": "DR. POONAM JAIN",
+      "medical_history": "UDAIPUR",
+      "reference_details": null,
+      "assigned_department": "PHYSIOTHERAPY",
+      "current_medications": null
+    },
+    "new_values": {
+      "age": "21",
+      "phone": "36324123",
+      "gender": "FEMALE",
+      "prefix": "Mrs",
+      "address": "",
+      "last_name": "BHATT",
+      "first_name": "POOJA",
+      "patient_tag": "Jain Community",
+      "date_of_entry": "2025-09-18",
+      "has_reference": false,
+      "assigned_doctor": "DR. POONAM JAIN",
+      "medical_history": "UDAIPUR",
+      "assigned_department": "PHYSIOTHERAPY"
+    },
+    "description": "Patient \"POOJA BHATT\" (P000917) information updated via Edit Modal",
+    "ip_address": null,
+    "user_agent": null,
+    "hospital_id": "550e8400-e29b-41d4-a716-446655440000",
+    "created_at": "2025-10-22T19:28:41.249538+00:00"
+  },
+  {
+    "id": "eb15a280-9ca8-41d9-b0bd-081201ecd975",
+    "user_id": "fb2037ba-7982-4b13-8524-e9fc5b42ca5a",
+    "user_email": "frontdesk@valant.com",
+    "user_role": "frontdesk",
+    "user_name": "User Staff",
+    "action_type": "UPDATE",
+    "table_name": "patients",
+    "record_id": "bf41773e-f20c-422a-918f-d6860e8a2c75",
+    "section_name": "Patient List",
+    "field_changes": {
+      "age": {
+        "new": "19",
+        "old": "20"
+      },
+      "email": {
+        "old": null
+      },
+      "phone": {
+        "new": "6260058569",
+        "old": ""
+      },
+      "allergies": {
+        "old": null
+      },
+      "blood_group": {
+        "old": null
+      },
+      "patient_tag": {
+        "old": null
+      },
+      "date_of_birth": {
+        "old": null
+      },
+      "medical_history": {
+        "old": null
+      },
+      "reference_details": {
+        "old": null
+      },
+      "current_medications": {
+        "old": null
+      }
+    },
+    "old_values": {
+      "age": "20",
+      "email": null,
+      "phone": "",
+      "gender": "MALE",
+      "prefix": "Mr",
+      "address": "",
+      "allergies": null,
+      "last_name": "SUTHAR",
+      "first_name": "VIKAS",
+      "blood_group": null,
+      "patient_tag": null,
+      "date_of_birth": null,
+      "date_of_entry": "2025-10-24",
+      "has_reference": false,
+      "assigned_doctor": "CMO",
+      "medical_history": null,
+      "reference_details": null,
+      "assigned_department": "NEUROSURGERY",
+      "current_medications": null
+    },
+    "new_values": {
+      "age": "19",
+      "phone": "6260058569",
+      "gender": "MALE",
+      "prefix": "Mr",
+      "address": "",
+      "last_name": "SUTHAR",
+      "first_name": "VIKAS",
+      "date_of_entry": "2025-10-24",
+      "has_reference": false,
+      "assigned_doctor": "CMO",
+      "assigned_department": "NEUROSURGERY"
+    },
+    "description": "Patient \"VIKAS SUTHAR\" (P004943) information updated via Edit Modal",
+    "ip_address": null,
+    "user_agent": null,
+    "hospital_id": "550e8400-e29b-41d4-a716-446655440000",
+    "created_at": "2025-10-24T04:10:22.234888+00:00"
+  },
+  {
+    "id": "65d45b51-d7a5-42f8-a034-f4acbba94be2",
+    "user_id": "fb2037ba-7982-4b13-8524-e9fc5b42ca5a",
+    "user_email": "frontdesk@valant.com",
+    "user_role": "frontdesk",
+    "user_name": "User Staff",
+    "action_type": "UPDATE",
+    "table_name": "patients",
+    "record_id": "bf41773e-f20c-422a-918f-d6860e8a2c75",
+    "section_name": "Patient List",
+    "field_changes": {
+      "email": {
+        "old": null
+      },
+      "allergies": {
+        "old": null
+      },
+      "blood_group": {
+        "old": null
+      },
+      "patient_tag": {
+        "old": null
+      },
+      "date_of_birth": {
+        "old": null
+      },
+      "medical_history": {
+        "old": null
+      },
+      "reference_details": {
+        "old": null
+      },
+      "current_medications": {
+        "old": null
+      }
+    },
+    "old_values": {
+      "age": "19",
+      "email": null,
+      "phone": "6260058569",
+      "gender": "MALE",
+      "prefix": "Mr",
+      "address": "",
+      "allergies": null,
+      "last_name": "SUTHAR",
+      "first_name": "VIKAS",
+      "blood_group": null,
+      "patient_tag": null,
+      "date_of_birth": null,
+      "date_of_entry": "2025-10-24",
+      "has_reference": false,
+      "assigned_doctor": "CMO",
+      "medical_history": null,
+      "reference_details": null,
+      "assigned_department": "NEUROSURGERY",
+      "current_medications": null
+    },
+    "new_values": {
+      "age": "19",
+      "phone": "6260058569",
+      "gender": "MALE",
+      "prefix": "Mr",
+      "address": "",
+      "last_name": "SUTHAR",
+      "first_name": "VIKAS",
+      "date_of_entry": "2025-10-24",
+      "has_reference": false,
+      "assigned_doctor": "CMO",
+      "assigned_department": "NEUROSURGERY"
+    },
+    "description": "Patient \"VIKAS SUTHAR\" (P004943) information updated via Edit Modal",
+    "ip_address": null,
+    "user_agent": null,
+    "hospital_id": "550e8400-e29b-41d4-a716-446655440000",
+    "created_at": "2025-10-24T04:12:41.759661+00:00"
+  },
+  {
+    "id": "bdd7323f-c021-4f0b-987a-9a909fbc30dd",
+    "user_id": "fdfb1091-5baa-4bda-adb3-158fc46a3c54",
+    "user_email": "pooja@valant.com",
+    "user_role": "frontdesk",
+    "user_name": "Pooja Singh",
+    "action_type": "UPDATE",
+    "table_name": "patients",
+    "record_id": "290210f0-005f-4188-ba79-db1dd106827c",
+    "section_name": "Patient List",
+    "field_changes": {
+      "email": {
+        "old": null
+      },
+      "prefix": {
+        "new": "Dr",
+        "old": "Mr"
+      },
+      "allergies": {
+        "old": null
+      },
+      "last_name": {
+        "new": "JI",
+        "old": "BHAGIRATH JI"
+      },
+      "first_name": {
+        "new": "BHAGIRATH",
+        "old": "DR."
+      },
+      "blood_group": {
+        "old": null
+      },
+      "patient_tag": {
+        "old": null
+      },
+      "date_of_birth": {
+        "old": null
+      },
+      "medical_history": {
+        "old": null
+      },
+      "reference_details": {
+        "old": null
+      },
+      "current_medications": {
+        "old": null
+      }
+    },
+    "old_values": {
+      "age": "40",
+      "email": null,
+      "phone": "7073062733",
+      "gender": "MALE",
+      "prefix": "Mr",
+      "address": "UDAIPUR",
+      "allergies": null,
+      "last_name": "BHAGIRATH JI",
+      "first_name": "DR.",
+      "blood_group": null,
+      "patient_tag": null,
+      "date_of_birth": null,
+      "date_of_entry": "2025-10-25",
+      "has_reference": false,
+      "assigned_doctor": "DR. HEMANT KHAJJA",
+      "medical_history": null,
+      "reference_details": null,
+      "assigned_department": "ORTHOPAEDIC",
+      "current_medications": null
+    },
+    "new_values": {
+      "age": "40",
+      "phone": "7073062733",
+      "gender": "MALE",
+      "prefix": "Dr",
+      "address": "UDAIPUR",
+      "last_name": "JI",
+      "first_name": "BHAGIRATH",
+      "date_of_entry": "2025-10-25",
+      "has_reference": false,
+      "assigned_doctor": "DR. HEMANT KHAJJA",
+      "assigned_department": "ORTHOPAEDIC"
+    },
+    "description": "Patient \"BHAGIRATH JI\" (P004951) information updated via Edit Modal",
+    "ip_address": null,
+    "user_agent": null,
+    "hospital_id": "550e8400-e29b-41d4-a716-446655440000",
+    "created_at": "2025-10-25T07:14:36.153733+00:00"
+  },
+  {
+    "id": "e1ddb44e-8e76-450a-918c-922e4cd76ed5",
+    "user_id": "fdfb1091-5baa-4bda-adb3-158fc46a3c54",
+    "user_email": "pooja@valant.com",
+    "user_role": "frontdesk",
+    "user_name": "Pooja Singh",
+    "action_type": "UPDATE",
+    "table_name": "patients",
+    "record_id": "fa4d405a-9dbc-43b3-8944-37f818cffcba",
+    "section_name": "Patient List",
+    "field_changes": {
+      "email": {
+        "old": null
+      },
+      "allergies": {
+        "old": null
+      },
+      "last_name": {
+        "new": "HARIJAN",
+        "old": "BAI"
+      },
+      "first_name": {
+        "new": "SHANTI",
+        "old": "SHANTA"
+      },
+      "blood_group": {
+        "old": null
+      },
+      "patient_tag": {
+        "old": null
+      },
+      "date_of_birth": {
+        "old": null
+      },
+      "medical_history": {
+        "old": null
+      },
+      "current_medications": {
+        "old": null
+      }
+    },
+    "old_values": {
+      "age": "45",
+      "email": null,
+      "phone": "8302825642",
+      "gender": "FEMALE",
+      "prefix": "Mrs",
+      "address": "NATHDWARA",
+      "allergies": null,
+      "last_name": "BAI",
+      "first_name": "SHANTA",
+      "blood_group": null,
+      "patient_tag": null,
+      "date_of_birth": null,
+      "date_of_entry": "2025-10-25",
+      "has_reference": true,
+      "assigned_doctor": "DR. HEMANT KHAJJA",
+      "medical_history": null,
+      "reference_details": "SUMAN JI (RELATIVE)",
+      "assigned_department": "ORTHOPAEDIC",
+      "current_medications": null
+    },
+    "new_values": {
+      "age": "45",
+      "phone": "8302825642",
+      "gender": "FEMALE",
+      "prefix": "Mrs",
+      "address": "NATHDWARA",
+      "last_name": "HARIJAN",
+      "first_name": "SHANTI",
+      "date_of_entry": "2025-10-25",
+      "has_reference": true,
+      "assigned_doctor": "DR. HEMANT KHAJJA",
+      "reference_details": "SUMAN JI (RELATIVE)",
+      "assigned_department": "ORTHOPAEDIC"
+    },
+    "description": "Patient \"SHANTI HARIJAN\" (P004953) information updated via Edit Modal",
+    "ip_address": null,
+    "user_agent": null,
+    "hospital_id": "550e8400-e29b-41d4-a716-446655440000",
+    "created_at": "2025-10-25T10:51:53.043018+00:00"
+  },
+  {
+    "id": "08387c96-9602-464a-a7f0-2c9550d52b64",
+    "user_id": "a5502dcc-9305-4081-935c-1708a750acb4",
+    "user_email": "tarun@valant.com",
+    "user_role": "frontdesk",
+    "user_name": "Tarun Kumar",
+    "action_type": "UPDATE",
+    "table_name": "patients",
+    "record_id": "de8c96e8-721d-4b52-a077-7bb5f677b395",
+    "section_name": "Patient List",
+    "field_changes": {
+      "email": {
+        "old": null
+      },
+      "allergies": {
+        "old": null
+      },
+      "blood_group": {
+        "old": null
+      },
+      "date_of_birth": {
+        "old": null
+      },
+      "date_of_entry": {
+        "new": "2025-10-03",
+        "old": "2025-10-26"
+      },
+      "medical_history": {
+        "old": null
+      },
+      "reference_details": {
+        "old": null
+      },
+      "current_medications": {
+        "old": null
+      }
+    },
+    "old_values": {
+      "age": "72",
+      "email": null,
+      "phone": "9462405952",
+      "gender": "FEMALE",
+      "prefix": "Mrs",
+      "address": "UDAIPUR",
+      "allergies": null,
+      "last_name": "",
+      "first_name": "Sarda",
+      "blood_group": null,
+      "patient_tag": "CAMP",
+      "date_of_birth": null,
+      "date_of_entry": "2025-10-26",
+      "has_reference": false,
+      "assigned_doctor": "DR. HEMANT",
+      "medical_history": null,
+      "reference_details": null,
+      "assigned_department": "ORTHO",
+      "current_medications": null
+    },
+    "new_values": {
+      "age": "72",
+      "phone": "9462405952",
+      "gender": "FEMALE",
+      "prefix": "Mrs",
+      "address": "UDAIPUR",
+      "last_name": "",
+      "first_name": "Sarda",
+      "patient_tag": "CAMP",
+      "date_of_entry": "2025-10-03",
+      "has_reference": false,
+      "assigned_doctor": "DR. HEMANT",
+      "assigned_department": "ORTHO"
+    },
+    "description": "Patient \"Sarda\" (P005054) information updated via Edit Modal",
+    "ip_address": null,
+    "user_agent": null,
+    "hospital_id": "550e8400-e29b-41d4-a716-446655440000",
+    "created_at": "2025-10-26T11:10:27.190757+00:00"
+  },
+  {
+    "id": "a5281de2-57b0-4089-aa93-8d052357bd6a",
+    "user_id": "a5502dcc-9305-4081-935c-1708a750acb4",
+    "user_email": "tarun@valant.com",
+    "user_role": "frontdesk",
+    "user_name": "Tarun Kumar",
+    "action_type": "UPDATE",
+    "table_name": "patients",
+    "record_id": "cd4fe12d-df2f-4b11-81ca-d724ab02bc39",
+    "section_name": "Patient List",
+    "field_changes": {
+      "email": {
+        "old": null
+      },
+      "allergies": {
+        "old": null
+      },
+      "blood_group": {
+        "old": null
+      },
+      "date_of_birth": {
+        "old": null
+      },
+      "date_of_entry": {
+        "new": "2025-10-03",
+        "old": "2025-10-26"
+      },
+      "medical_history": {
+        "old": null
+      },
+      "reference_details": {
+        "old": null
+      },
+      "current_medications": {
+        "old": null
+      }
+    },
+    "old_values": {
+      "age": "52",
+      "email": null,
+      "phone": "9828353435",
+      "gender": "MALE",
+      "prefix": "Mr",
+      "address": "UDAIPUR",
+      "allergies": null,
+      "last_name": "Joshi",
+      "first_name": "Rajesh",
+      "blood_group": null,
+      "patient_tag": "CAMP",
+      "date_of_birth": null,
+      "date_of_entry": "2025-10-26",
+      "has_reference": false,
+      "assigned_doctor": "DR. HEMANT",
+      "medical_history": null,
+      "reference_details": null,
+      "assigned_department": "ORTHO",
+      "current_medications": null
+    },
+    "new_values": {
+      "age": "52",
+      "phone": "9828353435",
+      "gender": "MALE",
+      "prefix": "Mr",
+      "address": "UDAIPUR",
+      "last_name": "Joshi",
+      "first_name": "Rajesh",
+      "patient_tag": "CAMP",
+      "date_of_entry": "2025-10-03",
+      "has_reference": false,
+      "assigned_doctor": "DR. HEMANT",
+      "assigned_department": "ORTHO"
+    },
+    "description": "Patient \"Rajesh Joshi\" (P005028) information updated via Edit Modal",
+    "ip_address": null,
+    "user_agent": null,
+    "hospital_id": "550e8400-e29b-41d4-a716-446655440000",
+    "created_at": "2025-10-26T11:10:50.074704+00:00"
+  },
+  {
+    "id": "e522bf38-2947-4cb3-9934-864790db08a1",
+    "user_id": "a5502dcc-9305-4081-935c-1708a750acb4",
+    "user_email": "tarun@valant.com",
+    "user_role": "frontdesk",
+    "user_name": "Tarun Kumar",
+    "action_type": "UPDATE",
+    "table_name": "patients",
+    "record_id": "4e42a5b6-db36-42c0-9649-efd8e8424f4f",
+    "section_name": "Patient List",
+    "field_changes": {
+      "email": {
+        "old": null
+      },
+      "allergies": {
+        "old": null
+      },
+      "blood_group": {
+        "old": null
+      },
+      "date_of_birth": {
+        "old": null
+      },
+      "date_of_entry": {
+        "new": "2025-10-03",
+        "old": "2025-10-26"
+      },
+      "medical_history": {
+        "old": null
+      },
+      "reference_details": {
+        "old": null
+      },
+      "current_medications": {
+        "old": null
+      }
+    },
+    "old_values": {
+      "age": "83",
+      "email": null,
+      "phone": "8290479063",
+      "gender": "MALE",
+      "prefix": "Mr",
+      "address": "UDAIPUR",
+      "allergies": null,
+      "last_name": "Shrotriya",
+      "first_name": "Sadashiv",
+      "blood_group": null,
+      "patient_tag": "CAMP",
+      "date_of_birth": null,
+      "date_of_entry": "2025-10-26",
+      "has_reference": false,
+      "assigned_doctor": "DR. HEMANT",
+      "medical_history": null,
+      "reference_details": null,
+      "assigned_department": "ORTHO",
+      "current_medications": null
+    },
+    "new_values": {
+      "age": "83",
+      "phone": "8290479063",
+      "gender": "MALE",
+      "prefix": "Mr",
+      "address": "UDAIPUR",
+      "last_name": "Shrotriya",
+      "first_name": "Sadashiv",
+      "patient_tag": "CAMP",
+      "date_of_entry": "2025-10-03",
+      "has_reference": false,
+      "assigned_doctor": "DR. HEMANT",
+      "assigned_department": "ORTHO"
+    },
+    "description": "Patient \"Sadashiv Shrotriya\" (P005023) information updated via Edit Modal",
+    "ip_address": null,
+    "user_agent": null,
+    "hospital_id": "550e8400-e29b-41d4-a716-446655440000",
+    "created_at": "2025-10-26T11:11:30.748699+00:00"
+  },
+  {
+    "id": "e2b319f3-9a00-4172-9232-3d47a1c70148",
+    "user_id": "a5502dcc-9305-4081-935c-1708a750acb4",
+    "user_email": "tarun@valant.com",
+    "user_role": "STAFF",
+    "user_name": "Tarun Kumar",
+    "action_type": "UPDATE",
+    "table_name": "patients",
+    "record_id": "2027fa55-c5f0-4361-8a22-2855512b3782",
+    "section_name": "Patient List",
+    "field_changes": {
+      "email": {
+        "old": null
+      },
+      "allergies": {
+        "old": null
+      },
+      "blood_group": {
+        "old": null
+      },
+      "patient_tag": {
+        "old": null
+      },
+      "date_of_birth": {
+        "old": null
+      },
+      "assigned_doctor": {
+        "new": "DR. ROHIT",
+        "old": "DR. TARUN "
+      },
+      "medical_history": {
+        "old": null
+      },
+      "assigned_department": {
+        "new": "CMO",
+        "old": "GENERAL PHYSICIAN"
+      },
+      "current_medications": {
+        "old": null
+      }
+    },
+    "old_values": {
+      "age": "49",
+      "email": null,
+      "phone": "7376569674",
+      "gender": "MALE",
+      "prefix": "Mr",
+      "address": "UDAIPUR",
+      "allergies": null,
+      "last_name": "MEHER",
+      "first_name": "BB",
+      "blood_group": null,
+      "patient_tag": null,
+      "date_of_birth": null,
+      "date_of_entry": "2025-10-27",
+      "has_reference": true,
+      "assigned_doctor": "DR. TARUN ",
+      "medical_history": null,
+      "reference_details": "BY HOSPITAL BORD",
+      "assigned_department": "GENERAL PHYSICIAN",
+      "current_medications": null
+    },
+    "new_values": {
+      "age": "49",
+      "phone": "7376569674",
+      "gender": "MALE",
+      "prefix": "Mr",
+      "address": "UDAIPUR",
+      "last_name": "MEHER",
+      "first_name": "BB",
+      "date_of_entry": "2025-10-27",
+      "has_reference": true,
+      "assigned_doctor": "DR. ROHIT",
+      "reference_details": "BY HOSPITAL BORD",
+      "assigned_department": "CMO"
+    },
+    "description": "Patient \"BB MEHER\" (P005097) information updated via Edit Modal",
+    "ip_address": null,
+    "user_agent": null,
+    "hospital_id": "550e8400-e29b-41d4-a716-446655440000",
+    "created_at": "2025-10-28T08:48:46.957947+00:00"
+  },
+  {
+    "id": "de8be5b7-d19a-4ad8-a254-007c9fd387ac",
+    "user_id": "a5502dcc-9305-4081-935c-1708a750acb4",
+    "user_email": "tarun@valant.com",
+    "user_role": "STAFF",
+    "user_name": "Tarun Kumar",
+    "action_type": "UPDATE",
+    "table_name": "patients",
+    "record_id": "e5d6b7a4-2e7d-4da1-9bcb-d38b6227f6e8",
+    "section_name": "Patient List",
+    "field_changes": {
+      "email": {
+        "old": null
+      },
+      "allergies": {
+        "old": null
+      },
+      "blood_group": {
+        "old": null
+      },
+      "patient_tag": {
+        "old": null
+      },
+      "date_of_birth": {
+        "old": null
+      },
+      "assigned_doctor": {
+        "new": "DR. ROHIT",
+        "old": null
+      },
+      "medical_history": {
+        "old": null
+      },
+      "reference_details": {
+        "old": null
+      },
+      "current_medications": {
+        "old": null
+      }
+    },
+    "old_values": {
+      "age": "49",
+      "email": null,
+      "phone": "7073542780",
+      "gender": "FEMALE",
+      "prefix": "Mrs",
+      "address": "NATHDWARA",
+      "allergies": null,
+      "last_name": "BAI",
+      "first_name": "BHANWARI",
+      "blood_group": null,
+      "patient_tag": null,
+      "date_of_birth": null,
+      "date_of_entry": "2025-10-24",
+      "has_reference": false,
+      "assigned_doctor": null,
+      "medical_history": null,
+      "reference_details": null,
+      "assigned_department": "CMO",
+      "current_medications": null
+    },
+    "new_values": {
+      "age": "49",
+      "phone": "7073542780",
+      "gender": "FEMALE",
+      "prefix": "Mrs",
+      "address": "NATHDWARA",
+      "last_name": "BAI",
+      "first_name": "BHANWARI",
+      "date_of_entry": "2025-10-24",
+      "has_reference": false,
+      "assigned_doctor": "DR. ROHIT",
+      "assigned_department": "CMO"
+    },
+    "description": "Patient \"BHANWARI BAI\" (P004948) information updated via Edit Modal",
+    "ip_address": null,
+    "user_agent": null,
+    "hospital_id": "550e8400-e29b-41d4-a716-446655440000",
+    "created_at": "2025-10-28T08:53:48.902782+00:00"
+  },
+  {
+    "id": "e0bde3bb-ca38-4f16-aa8b-1dd74c6c2b46",
+    "user_id": "a5502dcc-9305-4081-935c-1708a750acb4",
+    "user_email": "tarun@valant.com",
+    "user_role": "STAFF",
+    "user_name": "Tarun Kumar",
+    "action_type": "UPDATE",
+    "table_name": "patients",
+    "record_id": "63f5ebe2-2c53-4e25-9455-0e3cc686cc16",
+    "section_name": "Patient List",
+    "field_changes": {
+      "email": {
+        "old": null
+      },
+      "allergies": {
+        "old": null
+      },
+      "blood_group": {
+        "old": null
+      },
+      "patient_tag": {
+        "old": null
+      },
+      "date_of_birth": {
+        "old": null
+      },
+      "date_of_entry": {
+        "new": "2025-10-05",
+        "old": "2025-10-28"
+      },
+      "medical_history": {
+        "old": null
+      },
+      "reference_details": {
+        "old": null
+      },
+      "current_medications": {
+        "old": null
+      }
+    },
+    "old_values": {
+      "age": "61",
+      "email": null,
+      "phone": "9414385591",
+      "gender": "FEMALE",
+      "prefix": "Mrs",
+      "address": "",
+      "allergies": null,
+      "last_name": "Devi",
+      "first_name": "Chandi",
+      "blood_group": null,
+      "patient_tag": null,
+      "date_of_birth": null,
+      "date_of_entry": "2025-10-28",
+      "has_reference": false,
+      "assigned_doctor": "DR. HEMANT",
+      "medical_history": null,
+      "reference_details": null,
+      "assigned_department": "ORTHO",
+      "current_medications": null
+    },
+    "new_values": {
+      "age": "61",
+      "phone": "9414385591",
+      "gender": "FEMALE",
+      "prefix": "Mrs",
+      "address": "",
+      "last_name": "Devi",
+      "first_name": "Chandi",
+      "date_of_entry": "2025-10-05",
+      "has_reference": false,
+      "assigned_doctor": "DR. HEMANT",
+      "assigned_department": "ORTHO"
+    },
+    "description": "Patient \"Chandi Devi\" (P005208) information updated via Edit Modal",
+    "ip_address": null,
+    "user_agent": null,
+    "hospital_id": "550e8400-e29b-41d4-a716-446655440000",
+    "created_at": "2025-10-28T10:56:38.107949+00:00"
+  },
+  {
+    "id": "912b3443-1988-42ac-b3b3-32010ccc8550",
+    "user_id": "fb2037ba-7982-4b13-8524-e9fc5b42ca5a",
+    "user_email": "frontdesk@valant.com",
+    "user_role": "frontdesk",
+    "user_name": "User Staff",
+    "action_type": "UPDATE",
+    "table_name": "patients",
+    "record_id": "59bb4f7e-6dc6-4d1a-9b9d-0c99e66a8baf",
+    "section_name": "Patient List",
+    "field_changes": {
+      "age": {
+        "new": "65",
+        "old": "27"
+      },
+      "email": {
+        "old": null
+      },
+      "allergies": {
+        "old": null
+      },
+      "blood_group": {
+        "old": null
+      },
+      "patient_tag": {
+        "old": null
+      },
+      "date_of_birth": {
+        "old": null
+      },
+      "medical_history": {
+        "old": null
+      },
+      "current_medications": {
+        "old": null
+      }
+    },
+    "old_values": {
+      "age": "27",
+      "email": null,
+      "phone": "9783177805",
+      "gender": "MALE",
+      "prefix": "Mr",
+      "address": "BANSWARA",
+      "allergies": null,
+      "last_name": "LAL PATIDAR",
+      "first_name": "BHOGI",
+      "blood_group": null,
+      "patient_tag": null,
+      "date_of_birth": null,
+      "date_of_entry": "2025-11-01",
+      "has_reference": true,
+      "assigned_doctor": "DR. HEMANT KHAJJA",
+      "medical_history": null,
+      "reference_details": "CAMP",
+      "assigned_department": "ORTHOPAEDIC",
+      "current_medications": null
+    },
+    "new_values": {
+      "age": "65",
+      "phone": "9783177805",
+      "gender": "MALE",
+      "prefix": "Mr",
+      "address": "BANSWARA",
+      "last_name": "LAL PATIDAR",
+      "first_name": "BHOGI",
+      "date_of_entry": "2025-11-01",
+      "has_reference": true,
+      "assigned_doctor": "DR. HEMANT KHAJJA",
+      "reference_details": "CAMP",
+      "assigned_department": "ORTHOPAEDIC"
+    },
+    "description": "Patient \"BHOGI LAL PATIDAR\" (P000321) information updated via Edit Modal",
+    "ip_address": null,
+    "user_agent": null,
+    "hospital_id": "550e8400-e29b-41d4-a716-446655440000",
+    "created_at": "2025-11-01T05:45:52.1208+00:00"
+  },
+  {
+    "id": "074888f7-29a9-4d41-b956-0b60dc7bcba0",
+    "user_id": "c7a23a72-de40-47d0-82e0-198b64083fac",
+    "user_email": "priya@valant.com",
+    "user_role": "frontdesk",
+    "user_name": "Priya Sharma",
+    "action_type": "UPDATE",
+    "table_name": "patients",
+    "record_id": "51ff1245-80a4-4ce7-a218-4d24c1f51de5",
+    "section_name": "Patient List",
+    "field_changes": {
+      "email": {
+        "old": null
+      },
+      "gender": {
+        "new": "FEMALE",
+        "old": "MALE"
+      },
+      "prefix": {
+        "new": "Mrs",
+        "old": "Mr"
+      },
+      "allergies": {
+        "old": null
+      },
+      "blood_group": {
+        "old": null
+      },
+      "patient_tag": {
+        "old": null
+      },
+      "date_of_birth": {
+        "old": null
+      },
+      "medical_history": {
+        "old": null
+      },
+      "reference_details": {
+        "old": null
+      },
+      "current_medications": {
+        "old": null
+      }
+    },
+    "old_values": {
+      "age": "22",
+      "email": null,
+      "phone": "6376072223",
+      "gender": "MALE",
+      "prefix": "Mr",
+      "address": "UDAIPUR",
+      "allergies": null,
+      "last_name": "SUWALKA",
+      "first_name": "DIMPAL",
+      "blood_group": null,
+      "patient_tag": null,
+      "date_of_birth": null,
+      "date_of_entry": "2025-11-05",
+      "has_reference": false,
+      "assigned_doctor": "DR. LALITA SUWALKA",
+      "medical_history": null,
+      "reference_details": null,
+      "assigned_department": "DIETICIAN",
+      "current_medications": null
+    },
+    "new_values": {
+      "age": "22",
+      "phone": "6376072223",
+      "gender": "FEMALE",
+      "prefix": "Mrs",
+      "address": "UDAIPUR",
+      "last_name": "SUWALKA",
+      "first_name": "DIMPAL",
+      "date_of_entry": "2025-11-05",
+      "has_reference": false,
+      "assigned_doctor": "DR. LALITA SUWALKA",
+      "assigned_department": "DIETICIAN"
+    },
+    "description": "Patient \"DIMPAL SUWALKA\" (P005431) information updated via Edit Modal",
+    "ip_address": null,
+    "user_agent": null,
+    "hospital_id": "550e8400-e29b-41d4-a716-446655440000",
+    "created_at": "2025-11-05T08:20:17.40985+00:00"
+  },
+  {
+    "id": "ef4d7f05-3d8b-4a1b-b89a-1b912b106e55",
+    "user_id": "c7a23a72-de40-47d0-82e0-198b64083fac",
+    "user_email": "priya@valant.com",
+    "user_role": "frontdesk",
+    "user_name": "Priya Sharma",
+    "action_type": "UPDATE",
+    "table_name": "patients",
+    "record_id": "958a7dda-6216-4234-89b8-c1283eb3b6aa",
+    "section_name": "Patient List",
+    "field_changes": {
+      "email": {
+        "old": null
+      },
+      "gender": {
+        "new": "FEMALE",
+        "old": "MALE"
+      },
+      "prefix": {
+        "new": "Mrs",
+        "old": "Mr"
+      },
+      "allergies": {
+        "old": null
+      },
+      "blood_group": {
+        "old": null
+      },
+      "patient_tag": {
+        "old": null
+      },
+      "date_of_birth": {
+        "old": null
+      },
+      "medical_history": {
+        "old": null
+      },
+      "reference_details": {
+        "old": null
+      },
+      "current_medications": {
+        "old": null
+      }
+    },
+    "old_values": {
+      "age": "36",
+      "email": null,
+      "phone": "9660363036",
+      "gender": "MALE",
+      "prefix": "Mr",
+      "address": "UDAIPUR",
+      "allergies": null,
+      "last_name": "KUNWAR",
+      "first_name": "LAXITA",
+      "blood_group": null,
+      "patient_tag": null,
+      "date_of_birth": null,
+      "date_of_entry": "2025-11-05",
+      "has_reference": false,
+      "assigned_doctor": "DR. HEMANT KHAJJA",
+      "medical_history": null,
+      "reference_details": null,
+      "assigned_department": "ORTHOPAEDIC",
+      "current_medications": null
+    },
+    "new_values": {
+      "age": "36",
+      "phone": "9660363036",
+      "gender": "FEMALE",
+      "prefix": "Mrs",
+      "address": "UDAIPUR",
+      "last_name": "KUNWAR",
+      "first_name": "LAXITA",
+      "date_of_entry": "2025-11-05",
+      "has_reference": false,
+      "assigned_doctor": "DR. HEMANT KHAJJA",
+      "assigned_department": "ORTHOPAEDIC"
+    },
+    "description": "Patient \"LAXITA KUNWAR\" (P005430) information updated via Edit Modal",
+    "ip_address": null,
+    "user_agent": null,
+    "hospital_id": "550e8400-e29b-41d4-a716-446655440000",
+    "created_at": "2025-11-05T08:20:37.953903+00:00"
+  },
+  {
+    "id": "513323d9-de57-4865-8b22-090a922a9e76",
+    "user_id": "c7a23a72-de40-47d0-82e0-198b64083fac",
+    "user_email": "priya@valant.com",
+    "user_role": "frontdesk",
+    "user_name": "Priya Sharma",
+    "action_type": "UPDATE",
+    "table_name": "patients",
+    "record_id": "59cadf65-4a6e-423c-813b-b521867bf216",
+    "section_name": "Patient List",
+    "field_changes": {
+      "email": {
+        "old": null
+      },
+      "allergies": {
+        "old": null
+      },
+      "first_name": {
+        "new": "MAHAVIR",
+        "old": "MAHAVEER"
+      },
+      "blood_group": {
+        "old": null
+      },
+      "patient_tag": {
+        "old": null
+      },
+      "date_of_birth": {
+        "old": null
+      },
+      "medical_history": {
+        "old": null
+      },
+      "reference_details": {
+        "old": null
+      },
+      "current_medications": {
+        "old": null
+      }
+    },
+    "old_values": {
+      "age": "48",
+      "email": null,
+      "phone": "9414735097",
+      "gender": "MALE",
+      "prefix": "Mr",
+      "address": "CHITTORGARH",
+      "allergies": null,
+      "last_name": "NAGORI",
+      "first_name": "MAHAVEER",
+      "blood_group": null,
+      "patient_tag": null,
+      "date_of_birth": null,
+      "date_of_entry": "2025-11-06",
+      "has_reference": false,
+      "assigned_doctor": "DR. HEMANT KHAJJA",
+      "medical_history": null,
+      "reference_details": null,
+      "assigned_department": "ORTHOPAEDIC",
+      "current_medications": null
+    },
+    "new_values": {
+      "age": "48",
+      "phone": "9414735097",
+      "gender": "MALE",
+      "prefix": "Mr",
+      "address": "CHITTORGARH",
+      "last_name": "NAGORI",
+      "first_name": "MAHAVIR",
+      "date_of_entry": "2025-11-06",
+      "has_reference": false,
+      "assigned_doctor": "DR. HEMANT KHAJJA",
+      "assigned_department": "ORTHOPAEDIC"
+    },
+    "description": "Patient \"MAHAVIR NAGORI\" (P005434) information updated via Edit Modal",
+    "ip_address": null,
+    "user_agent": null,
+    "hospital_id": "550e8400-e29b-41d4-a716-446655440000",
+    "created_at": "2025-11-06T11:39:11.319751+00:00"
+  },
+  {
+    "id": "e1925de7-860b-46cd-9741-5d884217d866",
+    "user_id": "fdfb1091-5baa-4bda-adb3-158fc46a3c54",
+    "user_email": "pooja@valant.com",
+    "user_role": "STAFF",
+    "user_name": "Pooja Singh",
+    "action_type": "UPDATE",
+    "table_name": "patients",
+    "record_id": "59cadf65-4a6e-423c-813b-b521867bf216",
+    "section_name": "Patient List",
+    "field_changes": {
+      "email": {
+        "old": null
+      },
+      "allergies": {
+        "old": null
+      },
+      "blood_group": {
+        "old": null
+      },
+      "patient_tag": {
+        "old": null
+      },
+      "date_of_birth": {
+        "old": null
+      },
+      "assigned_doctor": {
+        "new": "DR. V.P.S.",
+        "old": "DR. HEMANT KHAJJA"
+      },
+      "medical_history": {
+        "old": null
+      },
+      "reference_details": {
+        "old": null
+      },
+      "current_medications": {
+        "old": null
+      }
+    },
+    "old_values": {
+      "age": "48",
+      "email": null,
+      "phone": "9414735097",
+      "gender": "MALE",
+      "prefix": "Mr",
+      "address": "CHITTORGARH",
+      "allergies": null,
+      "last_name": "NAGORI",
+      "first_name": "MAHAVIR",
+      "blood_group": null,
+      "patient_tag": null,
+      "date_of_birth": null,
+      "date_of_entry": "2025-11-06",
+      "has_reference": false,
+      "assigned_doctor": "DR. HEMANT KHAJJA",
+      "medical_history": null,
+      "reference_details": null,
+      "assigned_department": "ORTHOPAEDIC",
+      "current_medications": null
+    },
+    "new_values": {
+      "age": "48",
+      "phone": "9414735097",
+      "gender": "MALE",
+      "prefix": "Mr",
+      "address": "CHITTORGARH",
+      "last_name": "NAGORI",
+      "first_name": "MAHAVIR",
+      "date_of_entry": "2025-11-06",
+      "has_reference": false,
+      "assigned_doctor": "DR. V.P.S.",
+      "assigned_department": "ORTHOPAEDIC"
+    },
+    "description": "Patient \"MAHAVIR NAGORI\" (P005434) information updated via Edit Modal",
+    "ip_address": null,
+    "user_agent": null,
+    "hospital_id": "550e8400-e29b-41d4-a716-446655440000",
+    "created_at": "2025-11-06T14:38:12.189179+00:00"
+  },
+  {
+    "id": "2743ebd9-aa20-462b-b2b6-3b3cfb2dfdee",
+    "user_id": "fdfb1091-5baa-4bda-adb3-158fc46a3c54",
+    "user_email": "pooja@valant.com",
+    "user_role": "STAFF",
+    "user_name": "Pooja Singh",
+    "action_type": "UPDATE",
+    "table_name": "patients",
+    "record_id": "59cadf65-4a6e-423c-813b-b521867bf216",
+    "section_name": "Patient List",
+    "field_changes": {
+      "email": {
+        "old": null
+      },
+      "allergies": {
+        "old": null
+      },
+      "blood_group": {
+        "old": null
+      },
+      "patient_tag": {
+        "old": null
+      },
+      "date_of_birth": {
+        "old": null
+      },
+      "assigned_doctor": {
+        "new": "DR. HEMANT KHAJJA",
+        "old": "DR. V.P.S."
+      },
+      "medical_history": {
+        "old": null
+      },
+      "reference_details": {
+        "old": null
+      },
+      "current_medications": {
+        "old": null
+      }
+    },
+    "old_values": {
+      "age": "48",
+      "email": null,
+      "phone": "9414735097",
+      "gender": "MALE",
+      "prefix": "Mr",
+      "address": "CHITTORGARH",
+      "allergies": null,
+      "last_name": "NAGORI",
+      "first_name": "MAHAVIR",
+      "blood_group": null,
+      "patient_tag": null,
+      "date_of_birth": null,
+      "date_of_entry": "2025-11-06",
+      "has_reference": false,
+      "assigned_doctor": "DR. V.P.S.",
+      "medical_history": null,
+      "reference_details": null,
+      "assigned_department": "ORTHOPAEDIC",
+      "current_medications": null
+    },
+    "new_values": {
+      "age": "48",
+      "phone": "9414735097",
+      "gender": "MALE",
+      "prefix": "Mr",
+      "address": "CHITTORGARH",
+      "last_name": "NAGORI",
+      "first_name": "MAHAVIR",
+      "date_of_entry": "2025-11-06",
+      "has_reference": false,
+      "assigned_doctor": "DR. HEMANT KHAJJA",
+      "assigned_department": "ORTHOPAEDIC"
+    },
+    "description": "Patient \"MAHAVIR NAGORI\" (P005434) information updated via Edit Modal",
+    "ip_address": null,
+    "user_agent": null,
+    "hospital_id": "550e8400-e29b-41d4-a716-446655440000",
+    "created_at": "2025-11-06T15:43:11.102048+00:00"
+  },
+  {
+    "id": "652a5dec-f824-49f6-a0c2-f86b06f5f2d1",
+    "user_id": "fdfb1091-5baa-4bda-adb3-158fc46a3c54",
+    "user_email": "pooja@valant.com",
+    "user_role": "STAFF",
+    "user_name": "Pooja Singh",
+    "action_type": "UPDATE",
+    "table_name": "patients",
+    "record_id": "2974cf03-c820-4744-b1bc-5e8ca7623ca3",
+    "section_name": "Patient List",
+    "field_changes": {
+      "email": {
+        "old": null
+      },
+      "allergies": {
+        "old": null
+      },
+      "blood_group": {
+        "old": null
+      },
+      "patient_tag": {
+        "old": null
+      },
+      "date_of_birth": {
+        "old": null
+      },
+      "assigned_doctor": {
+        "new": "DR. HEMANT KHAJJA",
+        "old": "DR. V.P.S."
+      },
+      "medical_history": {
+        "old": null
+      },
+      "current_medications": {
+        "old": null
+      }
+    },
+    "old_values": {
+      "age": "63",
+      "email": null,
+      "phone": "8952905132",
+      "gender": "MALE",
+      "prefix": "Mrs",
+      "address": "SHOBHAGPURA UDAIPUR",
+      "allergies": null,
+      "last_name": "BAI",
+      "first_name": "LILA",
+      "blood_group": null,
+      "patient_tag": null,
+      "date_of_birth": null,
+      "date_of_entry": "2025-11-06",
+      "has_reference": true,
+      "assigned_doctor": "DR. V.P.S.",
+      "medical_history": null,
+      "reference_details": "DR. V.P. SIR",
+      "assigned_department": "ORTHOPAEDIC",
+      "current_medications": null
+    },
+    "new_values": {
+      "age": "63",
+      "phone": "8952905132",
+      "gender": "MALE",
+      "prefix": "Mrs",
+      "address": "SHOBHAGPURA UDAIPUR",
+      "last_name": "BAI",
+      "first_name": "LILA",
+      "date_of_entry": "2025-11-06",
+      "has_reference": true,
+      "assigned_doctor": "DR. HEMANT KHAJJA",
+      "reference_details": "DR. V.P. SIR",
+      "assigned_department": "ORTHOPAEDIC"
+    },
+    "description": "Patient \"LILA BAI\" (P005435) information updated via Edit Modal",
+    "ip_address": null,
+    "user_agent": null,
+    "hospital_id": "550e8400-e29b-41d4-a716-446655440000",
+    "created_at": "2025-11-06T15:43:24.616149+00:00"
+  },
+  {
+    "id": "d528a846-4264-47f9-81dd-ed88030e9bbd",
+    "user_id": "fdfb1091-5baa-4bda-adb3-158fc46a3c54",
+    "user_email": "pooja@valant.com",
+    "user_role": "frontdesk",
+    "user_name": "Pooja Singh",
+    "action_type": "UPDATE",
+    "table_name": "patients",
+    "record_id": "592dbeba-981e-4b63-85df-8447c46cfcc7",
+    "section_name": "Patient List",
+    "field_changes": {
+      "email": {
+        "old": null
+      },
+      "allergies": {
+        "old": null
+      },
+      "blood_group": {
+        "old": null
+      },
+      "date_of_birth": {
+        "old": null
+      },
+      "assigned_doctor": {
+        "new": "DR. HEMANT KHAJJA",
+        "old": "DR. HEMANT"
+      },
+      "medical_history": {
+        "old": null
+      },
+      "assigned_department": {
+        "new": "ORTHOPAEDIC",
+        "old": "ORTHO"
+      },
+      "current_medications": {
+        "old": null
+      }
+    },
+    "old_values": {
+      "age": "38",
+      "email": null,
+      "phone": "9256951635",
+      "gender": "MALE",
+      "prefix": "Mr",
+      "address": "UDAIPUR",
+      "allergies": null,
+      "last_name": "BAREGAMA",
+      "first_name": "VISHAL",
+      "blood_group": null,
+      "patient_tag": "CAMP",
+      "date_of_birth": null,
+      "date_of_entry": "2025-11-10",
+      "has_reference": true,
+      "assigned_doctor": "DR. HEMANT",
+      "medical_history": null,
+      "reference_details": "DR KAPIL SHREEMALI",
+      "assigned_department": "ORTHO",
+      "current_medications": null
+    },
+    "new_values": {
+      "age": "38",
+      "phone": "9256951635",
+      "gender": "MALE",
+      "prefix": "Mr",
+      "address": "UDAIPUR",
+      "last_name": "BAREGAMA",
+      "first_name": "VISHAL",
+      "patient_tag": "CAMP",
+      "date_of_entry": "2025-11-10",
+      "has_reference": true,
+      "assigned_doctor": "DR. HEMANT KHAJJA",
+      "reference_details": "DR KAPIL SHREEMALI",
+      "assigned_department": "ORTHOPAEDIC"
+    },
+    "description": "Patient \"VISHAL BAREGAMA\" (P005492) information updated via Edit Modal",
+    "ip_address": null,
+    "user_agent": null,
+    "hospital_id": "550e8400-e29b-41d4-a716-446655440000",
+    "created_at": "2025-11-10T12:20:48.513031+00:00"
+  },
+  {
+    "id": "508007d6-e2aa-43e8-8f5a-97f19d9b53ef",
+    "user_id": "c7a23a72-de40-47d0-82e0-198b64083fac",
+    "user_email": "priya@valant.com",
+    "user_role": "STAFF",
+    "user_name": "Priya Sharma",
+    "action_type": "UPDATE",
+    "table_name": "patients",
+    "record_id": "04c8c53a-83b4-41d8-9ca3-fc6f6f1d851e",
+    "section_name": "Patient List",
+    "field_changes": {
+      "email": {
+        "old": null
+      },
+      "allergies": {
+        "old": null
+      },
+      "blood_group": {
+        "old": null
+      },
+      "patient_tag": {
+        "old": null
+      },
+      "date_of_birth": {
+        "old": null
+      },
+      "medical_history": {
+        "old": null
+      },
+      "reference_details": {
+        "old": null
+      },
+      "current_medications": {
+        "old": null
+      }
+    },
+    "old_values": {
+      "age": "19",
+      "email": null,
+      "phone": "742709334",
+      "gender": "MALE",
+      "prefix": "Mr",
+      "address": "UDAIPUR",
+      "allergies": null,
+      "last_name": "ANJANA",
+      "first_name": "NAYAN",
+      "blood_group": null,
+      "patient_tag": null,
+      "date_of_birth": null,
+      "date_of_entry": "2025-11-11",
+      "has_reference": false,
+      "assigned_doctor": "DR KESHAVE SIR",
+      "medical_history": null,
+      "reference_details": null,
+      "assigned_department": "ORTHOPAEDIC",
+      "current_medications": null
+    },
+    "new_values": {
+      "age": "19",
+      "phone": "742709334",
+      "gender": "MALE",
+      "prefix": "Mr",
+      "address": "UDAIPUR",
+      "last_name": "ANJANA",
+      "first_name": "NAYAN",
+      "date_of_entry": "2025-11-11",
+      "has_reference": false,
+      "assigned_doctor": "DR KESHAVE SIR",
+      "assigned_department": "ORTHOPAEDIC"
+    },
+    "description": "Patient \"NAYAN ANJANA\" (P005548) information updated via Edit Modal",
+    "ip_address": null,
+    "user_agent": null,
+    "hospital_id": "550e8400-e29b-41d4-a716-446655440000",
+    "created_at": "2025-11-11T10:36:05.782456+00:00"
+  },
+  {
+    "id": "cb91c094-2fc4-4826-a8c4-732088e0260e",
+    "user_id": "c7a23a72-de40-47d0-82e0-198b64083fac",
+    "user_email": "priya@valant.com",
+    "user_role": "frontdesk",
+    "user_name": "Priya Sharma",
+    "action_type": "UPDATE",
+    "table_name": "patients",
+    "record_id": "04c8c53a-83b4-41d8-9ca3-fc6f6f1d851e",
+    "section_name": "Patient List",
+    "field_changes": {
+      "email": {
+        "old": null
+      },
+      "allergies": {
+        "old": null
+      },
+      "blood_group": {
+        "old": null
+      },
+      "patient_tag": {
+        "old": null
+      },
+      "date_of_birth": {
+        "old": null
+      },
+      "medical_history": {
+        "old": null
+      },
+      "reference_details": {
+        "old": null
+      },
+      "current_medications": {
+        "old": null
+      }
+    },
+    "old_values": {
+      "age": "19",
+      "email": null,
+      "phone": "742709334",
+      "gender": "MALE",
+      "prefix": "Mr",
+      "address": "UDAIPUR",
+      "allergies": null,
+      "last_name": "ANJANA",
+      "first_name": "NAYAN",
+      "blood_group": null,
+      "patient_tag": null,
+      "date_of_birth": null,
+      "date_of_entry": "2025-11-11",
+      "has_reference": false,
+      "assigned_doctor": "DR KESHAVE SIR",
+      "medical_history": null,
+      "reference_details": null,
+      "assigned_department": "ORTHOPAEDIC",
+      "current_medications": null
+    },
+    "new_values": {
+      "age": "19",
+      "phone": "742709334",
+      "gender": "MALE",
+      "prefix": "Mr",
+      "address": "UDAIPUR",
+      "last_name": "ANJANA",
+      "first_name": "NAYAN",
+      "date_of_entry": "2025-11-11",
+      "has_reference": false,
+      "assigned_doctor": "DR KESHAVE SIR",
+      "assigned_department": "ORTHOPAEDIC"
+    },
+    "description": "Patient \"NAYAN ANJANA\" (P005548) information updated via Edit Modal",
+    "ip_address": null,
+    "user_agent": null,
+    "hospital_id": "550e8400-e29b-41d4-a716-446655440000",
+    "created_at": "2025-11-11T10:37:15.051269+00:00"
+  },
+  {
+    "id": "7adeccae-bcc0-47b0-9347-9017ec2d9b59",
+    "user_id": "fb2037ba-7982-4b13-8524-e9fc5b42ca5a",
+    "user_email": "frontdesk@valant.com",
+    "user_role": "frontdesk",
+    "user_name": "User Staff",
+    "action_type": "UPDATE",
+    "table_name": "patients",
+    "record_id": "705af098-cd90-448f-b332-a7f1b629c7f7",
+    "section_name": "Patient List",
+    "field_changes": {
+      "age": {
+        "new": "13",
+        "old": "12"
+      },
+      "email": {
+        "old": null
+      },
+      "allergies": {
+        "old": null
+      },
+      "blood_group": {
+        "old": null
+      },
+      "patient_tag": {
+        "old": null
+      },
+      "date_of_birth": {
+        "old": null
+      },
+      "medical_history": {
+        "old": null
+      },
+      "reference_details": {
+        "old": null
+      },
+      "current_medications": {
+        "old": null
+      }
+    },
+    "old_values": {
+      "age": "12",
+      "email": null,
+      "phone": "9460633329",
+      "gender": "FEMALE",
+      "prefix": "Mrs",
+      "address": "UDAIPUR",
+      "allergies": null,
+      "last_name": "tiwra",
+      "first_name": "apeksha",
+      "blood_group": null,
+      "patient_tag": null,
+      "date_of_birth": null,
+      "date_of_entry": "2025-11-14",
+      "has_reference": false,
+      "assigned_doctor": "DR. HEMANT KHAJJA",
+      "medical_history": null,
+      "reference_details": null,
+      "assigned_department": "ORTHOPAEDIC",
+      "current_medications": null
+    },
+    "new_values": {
+      "age": "13",
+      "phone": "9460633329",
+      "gender": "FEMALE",
+      "prefix": "Mrs",
+      "address": "UDAIPUR",
+      "last_name": "tiwra",
+      "first_name": "apeksha",
+      "date_of_entry": "2025-11-14",
+      "has_reference": false,
+      "assigned_doctor": "DR. HEMANT KHAJJA",
+      "assigned_department": "ORTHOPAEDIC"
+    },
+    "description": "Patient \"apeksha tiwra\" (P005578) information updated via Edit Modal",
+    "ip_address": null,
+    "user_agent": null,
+    "hospital_id": "550e8400-e29b-41d4-a716-446655440000",
+    "created_at": "2025-11-14T11:56:01.410866+00:00"
+  },
+  {
+    "id": "c3ca4184-39b3-4978-8920-c159e9d02f46",
+    "user_id": "fb2037ba-7982-4b13-8524-e9fc5b42ca5a",
+    "user_email": "frontdesk@valant.com",
+    "user_role": "frontdesk",
+    "user_name": "User Staff",
+    "action_type": "UPDATE",
+    "table_name": "patients",
+    "record_id": "1a7fecb7-3b8b-4e9b-9451-c7e71a8606ea",
+    "section_name": "Patient List",
+    "field_changes": {
+      "email": {
+        "old": null
+      },
+      "allergies": {
+        "old": null
+      },
+      "first_name": {
+        "new": "ARCHANA",
+        "old": "ARCHNA"
+      },
+      "blood_group": {
+        "old": null
+      },
+      "patient_tag": {
+        "old": null
+      },
+      "date_of_birth": {
+        "old": null
+      },
+      "medical_history": {
+        "old": null
+      },
+      "current_medications": {
+        "old": null
+      }
+    },
+    "old_values": {
+      "age": "63",
+      "email": null,
+      "phone": "9460612231",
+      "gender": "FEMALE",
+      "prefix": "Mrs",
+      "address": "BADISADARI",
+      "allergies": null,
+      "last_name": "KANTHALIYA",
+      "first_name": "ARCHNA",
+      "blood_group": null,
+      "patient_tag": null,
+      "date_of_birth": null,
+      "date_of_entry": "2025-11-17",
+      "has_reference": true,
+      "assigned_doctor": "DR. HEMANT KHAJJA",
+      "medical_history": null,
+      "reference_details": "DR ANURAG TALESHRA",
+      "assigned_department": "ORTHOPAEDIC",
+      "current_medications": null
+    },
+    "new_values": {
+      "age": "63",
+      "phone": "9460612231",
+      "gender": "FEMALE",
+      "prefix": "Mrs",
+      "address": "BADISADARI",
+      "last_name": "KANTHALIYA",
+      "first_name": "ARCHANA",
+      "date_of_entry": "2025-11-17",
+      "has_reference": true,
+      "assigned_doctor": "DR. HEMANT KHAJJA",
+      "reference_details": "DR ANURAG TALESHRA",
+      "assigned_department": "ORTHOPAEDIC"
+    },
+    "description": "Patient \"ARCHANA KANTHALIYA\" (P005581) information updated via Edit Modal",
+    "ip_address": null,
+    "user_agent": null,
+    "hospital_id": "550e8400-e29b-41d4-a716-446655440000",
+    "created_at": "2025-11-17T12:35:22.015615+00:00"
+  },
+  {
+    "id": "2d75c48c-c984-4218-9c7d-38da8eb561b0",
+    "user_id": "fb2037ba-7982-4b13-8524-e9fc5b42ca5a",
+    "user_email": "frontdesk@valant.com",
+    "user_role": "frontdesk",
+    "user_name": "User Staff",
+    "action_type": "UPDATE",
+    "table_name": "patients",
+    "record_id": "4dc09225-e350-4619-9f90-eb0758fe34f3",
+    "section_name": "Patient List",
+    "field_changes": {
+      "email": {
+        "old": null
+      },
+      "allergies": {
+        "old": null
+      },
+      "blood_group": {
+        "old": null
+      },
+      "patient_tag": {
+        "old": null
+      },
+      "date_of_birth": {
+        "old": null
+      },
+      "assigned_doctor": {
+        "new": "DR. KESHAV",
+        "old": "DR. HEMANT KHAJJA"
+      },
+      "medical_history": {
+        "old": null
+      },
+      "current_medications": {
+        "old": null
+      }
+    },
+    "old_values": {
+      "age": "19",
+      "email": null,
+      "phone": "7737132960",
+      "gender": "FEMALE",
+      "prefix": "Ms",
+      "address": "UDAIPUR",
+      "allergies": null,
+      "last_name": "SHRIMAL",
+      "first_name": "HONEY",
+      "blood_group": null,
+      "patient_tag": null,
+      "date_of_birth": null,
+      "date_of_entry": "2025-11-17",
+      "has_reference": true,
+      "assigned_doctor": "DR. HEMANT KHAJJA",
+      "medical_history": null,
+      "reference_details": "FRIEND ",
+      "assigned_department": "ORTHOPAEDIC",
+      "current_medications": null
+    },
+    "new_values": {
+      "age": "19",
+      "phone": "7737132960",
+      "gender": "FEMALE",
+      "prefix": "Ms",
+      "address": "UDAIPUR",
+      "last_name": "SHRIMAL",
+      "first_name": "HONEY",
+      "date_of_entry": "2025-11-17",
+      "has_reference": true,
+      "assigned_doctor": "DR. KESHAV",
+      "reference_details": "FRIEND ",
+      "assigned_department": "ORTHOPAEDIC"
+    },
+    "description": "Patient \"HONEY SHRIMAL\" (P005583) information updated via Edit Modal",
+    "ip_address": null,
+    "user_agent": null,
+    "hospital_id": "550e8400-e29b-41d4-a716-446655440000",
+    "created_at": "2025-11-17T13:56:56.497627+00:00"
+  },
+  {
+    "id": "242e8108-9957-4678-b2b0-020a61651b9c",
+    "user_id": "a5502dcc-9305-4081-935c-1708a750acb4",
+    "user_email": "tarun@valant.com",
+    "user_role": "STAFF",
+    "user_name": "Tarun Kumar",
+    "action_type": "UPDATE",
+    "table_name": "patients",
+    "record_id": "cf3d7ecf-1291-48b6-9916-4533ebb348eb",
+    "section_name": "Patient List",
+    "field_changes": {
+      "email": {
+        "old": null
+      },
+      "allergies": {
+        "old": null
+      },
+      "blood_group": {
+        "old": null
+      },
+      "patient_tag": {
+        "old": null
+      },
+      "date_of_birth": {
+        "old": null
+      },
+      "medical_history": {
+        "old": null
+      },
+      "reference_details": {
+        "old": null
+      },
+      "current_medications": {
+        "old": null
+      }
+    },
+    "old_values": {
+      "age": "22",
+      "email": null,
+      "phone": "9982318562",
+      "gender": "MALE",
+      "prefix": "Mr",
+      "address": "UDAIPUR",
+      "allergies": null,
+      "last_name": "SHAH",
+      "first_name": "ARYA",
+      "blood_group": null,
+      "patient_tag": null,
+      "date_of_birth": null,
+      "date_of_entry": "2025-11-22",
+      "has_reference": false,
+      "assigned_doctor": "DR. HEMANT KHAJJA",
+      "medical_history": null,
+      "reference_details": null,
+      "assigned_department": "ORTHOPAEDIC",
+      "current_medications": null
+    },
+    "new_values": {
+      "age": "22",
+      "phone": "9982318562",
+      "gender": "MALE",
+      "prefix": "Mr",
+      "address": "UDAIPUR",
+      "last_name": "SHAH",
+      "first_name": "ARYA",
+      "date_of_entry": "2025-11-22",
+      "has_reference": false,
+      "assigned_doctor": "DR. HEMANT KHAJJA",
+      "assigned_department": "ORTHOPAEDIC"
+    },
+    "description": "Patient \"ARYA SHAH\" (P005611) information updated via Edit Modal",
+    "ip_address": null,
+    "user_agent": null,
+    "hospital_id": "550e8400-e29b-41d4-a716-446655440000",
+    "created_at": "2025-11-22T09:20:29.013921+00:00"
+  }
+]

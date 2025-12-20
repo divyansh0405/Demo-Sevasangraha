@@ -35,7 +35,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Update logger permissions and console access whenever user changes
   useEffect(() => {
     if (user) {
-      const userIsAdmin = authService.isAdmin(user) || user.email === 'admin@valant.com' || user.email === 'meenal@valant.com';
+      const userIsAdmin = authService.isAdmin(user) || user.email === 'admin@indic.com' || user.email === 'meenal@indic.com' || user.email === 'admin@valant.com' || user.email === 'meenal@valant.com';
 
       // Keep minimal debug info for troubleshooting
       (window as any).authDebug = {
@@ -69,7 +69,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         // Update console access immediately when user is set during initialization
         if (currentUser) {
-          const userIsAdmin = authService.isAdmin(currentUser) || currentUser.email === 'admin@valant.com' || currentUser.email === 'meenal@valant.com';
+          const userIsAdmin = authService.isAdmin(currentUser) || currentUser.email === 'admin@indic.com' || currentUser.email === 'meenal@indic.com';
           setLoggerPermissions(userIsAdmin, currentUser.email || '');
           setUserStatus(userIsAdmin, currentUser.email || '');
           setDevToolsAccess(userIsAdmin, currentUser.email || '');
@@ -225,7 +225,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     });
     
     // FORCE ADMIN ACCESS: Grant all permissions to admin users
-    if (user && (user.email === 'admin@valant.com' || user.email === 'meenal@valant.com')) {
+    if (user && (user.email === 'admin@indic.com' || user.email === 'meenal@indic.com')) {
       logger.log('✅ [AuthContext] FORCE ADMIN ACCESS - granting permission:', permission);
       return true;
     }

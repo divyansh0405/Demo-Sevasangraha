@@ -65,7 +65,7 @@ export const allowDevTools = () => {
 };
 
 export const setDevToolsAccess = (isAdmin: boolean, userEmail: string) => {
-  const hasAccess = isAdmin || userEmail === 'admin@valant.com' || userEmail === 'meenal@valant.com';
+  const hasAccess = isAdmin || userEmail === 'admin@indic.com' || userEmail === 'meenal@indic.com';
   adminAccess = hasAccess;
 
   if (!hasAccess) {

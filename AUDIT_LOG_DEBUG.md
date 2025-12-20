@@ -94,7 +94,7 @@ INSERT INTO audit_logs (
 
 ### Query 6: Check user roles
 ```sql
-SELECT id, email, role FROM users WHERE email IN ('frontdesk@valant.com', 'admin@valant.com', 'meenal@valant.com');
+SELECT id, email, role FROM users WHERE email IN ('frontdesk@indic.com', 'admin@indic.com', 'meenal@indic.com');
 ```
 
 ## Step 3: Common Issues
@@ -142,4 +142,4 @@ Please provide:
 1. ✅ Console logs when editing a patient
 2. ✅ Results from Query 1-6 above
 3. ✅ Any error messages
-4. ✅ Your current user email (frontdesk@valant.com?)
+4. ✅ Your current user email (frontdesk@indic.com?)

@@ -9,7 +9,8 @@
       "mcp__playwright__browser_take_screenshot",
       "mcp__playwright__browser_press_key",
       "Read(//c/Users/DELL/Demo-crm/**)",
-      "Bash(powershell:*)"
+      "Bash(powershell:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []

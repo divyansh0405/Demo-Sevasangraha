@@ -75,7 +75,7 @@ This creates a database function that **bypasses RLS entirely** using `SECURITY 
    - ❌ If error: Share the error message with me
 
 ### Step 3: Verify in Admin Panel
-1. **Log in as admin** (`admin@valant.com` or `meenal@valant.com`)
+1. **Log in as admin** (`admin@indic.com` or `meenal@indic.com`)
 2. Go to **Audit Log** tab
 3. You should now see the patient edit!
 
@@ -168,7 +168,7 @@ Expected: Should show count > 0 after you edit a patient
 
 ### No audit logs showing in admin panel
 **Solution**:
-1. Check if user has admin role: `SELECT email, role FROM users WHERE email = 'admin@valant.com';`
+1. Check if user has admin role: `SELECT email, role FROM users WHERE email = 'admin@indic.com';`
 2. Verify RLS SELECT policy exists for admins
 3. Try running `FIX_AUDIT_RLS_POLICY.sql` for the SELECT policy
 

@@ -1,8 +1,8 @@
 -- Optional: Create Meenal as admin user in database
--- The frontend code will treat meenal@valant.com as admin regardless of database role
+-- The frontend code will treat meenal@indic.com as admin regardless of database role
 
 -- First create user in Supabase Auth dashboard:
--- Email: meenal@valant.com
+-- Email: meenal@indic.com
 -- Password: Meenal@123
 
 -- Then run this to set admin role (optional):
@@ -11,18 +11,18 @@ SET raw_user_meta_data = jsonb_build_object(
     'role', 'admin', 
     'full_name', 'Meenal Admin'
 )
-WHERE email = 'meenal@valant.com';
+WHERE email = 'meenal@indic.com';
 
 -- Insert into public.users table (optional):
 INSERT INTO public.users (id, email, role, full_name, is_active)
 SELECT 
     au.id,
-    'meenal@valant.com',
+    'meenal@indic.com',
     'admin',
     'Meenal Admin',
     true
 FROM auth.users au
-WHERE au.email = 'meenal@valant.com'
+WHERE au.email = 'meenal@indic.com'
 ON CONFLICT (id) DO UPDATE SET
     role = 'admin',
     full_name = 'Meenal Admin',
@@ -35,11 +35,11 @@ SELECT
     u.full_name,
     u.is_active
 FROM public.users u
-WHERE u.email = 'meenal@valant.com';
+WHERE u.email = 'meenal@indic.com';
 
 /*
 LOGIN CREDENTIALS:
-Email: meenal@valant.com
+Email: meenal@indic.com
 Password: Meenal@123
 
 PERMISSIONS: FULL ADMIN ACCESS

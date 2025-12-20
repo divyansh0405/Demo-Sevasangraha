@@ -8,7 +8,7 @@ import { Input } from './ui/Input';
 import ModernDatePicker from './ui/ModernDatePicker';
 import EditPatientModal from './EditPatientModal';
 import Receipt from './Receipt';
-import ValantPrescription from './ValantPrescription';
+import SevasangrahaPrescription from './SevasangrahaPrescription';
 import VHPrescription from './VHPrescription';
 import MultiplePrescriptionGenerator from './MultiplePrescriptionGenerator';
 import SimpleEnhancedPatientRecord from './SimpleEnhancedPatientRecord';
@@ -40,7 +40,7 @@ const PatientHistoryModal: React.FC<PatientHistoryModalProps> = ({ patient, isOp
   const [showTransactionPrescription, setShowTransactionPrescription] = useState(false);
   const [selectedPatientForPrescription, setSelectedPatientForPrescription] = useState<PatientWithRelations | null>(null);
   const [selectedTransactionForPrescription, setSelectedTransactionForPrescription] = useState<any>(null);
-  const [selectedPrescriptionType, setSelectedPrescriptionType] = useState<'VH' | 'VALANT'>('VH');
+  const [selectedPrescriptionType, setSelectedPrescriptionType] = useState<'VH' | 'SEVASANGRAHA'>('VH');
 
   // Close dropdown when clicking outside
   React.useEffect(() => {
@@ -61,7 +61,7 @@ const PatientHistoryModal: React.FC<PatientHistoryModalProps> = ({ patient, isOp
     };
   }, []);
 
-  const printPrescriptionForTransaction = async (patient: PatientWithRelations, transaction: any, prescriptionType: 'VH' | 'VALANT') => {
+  const printPrescriptionForTransaction = async (patient: PatientWithRelations, transaction: any, prescriptionType: 'VH' | 'SEVASANGRAHA') => {
     // Debug: Log transaction data to see available fields
     logger.log('🔍 Transaction data for prescription:', transaction);
     logger.log('🏥 Available transaction fields:', Object.keys(transaction));
@@ -245,10 +245,10 @@ const PatientHistoryModal: React.FC<PatientHistoryModalProps> = ({ patient, isOp
       name: '',
       address: '10, Madhav Vihar Shobhagpura, Udaipur (313001)',
       phone: '+91 9119118000',
-      email: 'valanthospital@gmail.com',
+      email: 'sevasangrahahospital@gmail.com',
       registration: '',
       gst: '',
-      website: 'www.valanthospital.com'
+      website: 'www.sevasangrahahospital.com'
     };
 
     // Prepare receipt data with all selected transactions
@@ -891,15 +891,15 @@ const PatientHistoryModal: React.FC<PatientHistoryModalProps> = ({ patient, isOp
 
                     const result = await window.opener.sendEmailFromPopup({
                       to: email,
-                      subject: \`Receipt #\${receiptNum} - Valant Hospital\`,
+                      subject: \`Receipt #\${receiptNum} - Sevasangraha Hospital\`,
                       html: \`
                         <!DOCTYPE html>
                         <html>
                         <head><meta charset="utf-8"></head>
                         <body style="font-family: Arial, sans-serif; padding: 20px;">
                           <h2>Dear \${patientFullName},</h2>
-                          <p>Thank you for choosing Valant Hospital. Please find your receipt attached.</p>
-                          <p>Best regards,<br><strong>Valant Hospital Team</strong></p>
+                          <p>Thank you for choosing Sevasangraha Hospital. Please find your receipt attached.</p>
+                          <p>Best regards,<br><strong>Sevasangraha Hospital Team</strong></p>
                         </body>
                         </html>
                       \`,
@@ -1338,7 +1338,7 @@ const PatientHistoryModal: React.FC<PatientHistoryModalProps> = ({ patient, isOp
                                 </button>
                                 <button
                                   onClick={async () => {
-                                    await printPrescriptionForTransaction(patient, transaction, 'VALANT');
+                                    await printPrescriptionForTransaction(patient, transaction, 'SEVASANGRAHA');
                                     document.getElementById(`prescription-dropdown-${transaction.id}`)!.style.display = 'none';
                                   }}
                                   className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100"
@@ -1348,7 +1348,7 @@ const PatientHistoryModal: React.FC<PatientHistoryModalProps> = ({ patient, isOp
                               </div>
                             </div>
                           )}
-                          {transaction.status !== 'CANCELLED' && user?.email !== 'frontdesk@valant.com' && (
+                          {transaction.status !== 'CANCELLED' && user?.email !== 'frontdesk@indic.com' && (
                             <button
                               onClick={() => handleDeleteTransaction(transaction.id, transaction.description, transaction.amount)}
                               disabled={deletingTransactionId === transaction.id}
@@ -1387,7 +1387,7 @@ const PatientHistoryModal: React.FC<PatientHistoryModalProps> = ({ patient, isOp
               }}
             />
           ) : (
-            <ValantPrescription
+            <SevasangrahaPrescription
               patient={selectedPatientForPrescription}
               onClose={() => {
                 setShowTransactionPrescription(false);
@@ -1470,7 +1470,7 @@ const ComprehensivePatientList: React.FC<ComprehensivePatientListProps> = ({ onN
   const [showEditModal, setShowEditModal] = useState(false);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [selectedPatientForReceipt, setSelectedPatientForReceipt] = useState<PatientWithRelations | null>(null);
-  const [showValantPrescription, setShowValantPrescription] = useState(false);
+  const [showSevasangrahaPrescription, setShowSevasangrahaPrescription] = useState(false);
   const [showVHPrescription, setShowVHPrescription] = useState(false);
   const [showEnhancedPatientRecord, setShowEnhancedPatientRecord] = useState(false);
   const [showMultiplePrescription, setShowMultiplePrescription] = useState(false);
@@ -1854,7 +1854,7 @@ const ComprehensivePatientList: React.FC<ComprehensivePatientListProps> = ({ onN
     } else {
       // Use single prescription (original behavior)
       if (template === 'valant') {
-        setShowValantPrescription(true);
+        setShowSevasangrahaPrescription(true);
       } else if (template === 'vh') {
         setShowVHPrescription(true);
       }
@@ -2735,7 +2735,7 @@ const ComprehensivePatientList: React.FC<ComprehensivePatientListProps> = ({ onN
                     </button>
 
                     {/* Delete - Hidden for frontdesk users */}
-                    {user?.email !== 'frontdesk@valant.com' && (
+                    {user?.email !== 'frontdesk@indic.com' && (
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -2829,11 +2829,11 @@ const ComprehensivePatientList: React.FC<ComprehensivePatientListProps> = ({ onN
       )}
 
       {/* Valant Prescription Modal */}
-      {showValantPrescription && selectedPatientForPrescription && (
-        <ValantPrescription
+      {showSevasangrahaPrescription && selectedPatientForPrescription && (
+        <SevasangrahaPrescription
           patient={selectedPatientForPrescription}
           onClose={() => {
-            setShowValantPrescription(false);
+            setShowSevasangrahaPrescription(false);
             setSelectedPatientForPrescription(null);
           }}
         />

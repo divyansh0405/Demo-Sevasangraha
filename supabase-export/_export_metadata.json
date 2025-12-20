@@ -1,0 +1,74 @@
+{
+  "exported_at": "2025-12-01T15:16:58.117Z",
+  "supabase_url": "https://oghqwddhojnryovmfvzc.supabase.co",
+  "tables": {
+    "users": {
+      "rows": 0,
+      "exists": true
+    },
+    "patients": {
+      "rows": 5540,
+      "exists": true
+    },
+    "doctors": {
+      "rows": 15,
+      "exists": true
+    },
+    "departments": {
+      "rows": 0,
+      "exists": true
+    },
+    "beds": {
+      "rows": 40,
+      "exists": true
+    },
+    "patient_admissions": {
+      "rows": 0,
+      "exists": true
+    },
+    "patient_visits": {
+      "rows": 0,
+      "error": "relation \"public.patient_visits\" does not exist"
+    },
+    "patient_transactions": {
+      "rows": 6932,
+      "exists": true
+    },
+    "appointments": {
+      "rows": 0,
+      "exists": true
+    },
+    "medicines": {
+      "rows": 0,
+      "exists": true
+    },
+    "daily_expenses": {
+      "rows": 0,
+      "exists": true
+    },
+    "discharge_summary": {
+      "rows": 0,
+      "error": "relation \"public.discharge_summary\" does not exist"
+    },
+    "email_logs": {
+      "rows": 0,
+      "exists": true
+    },
+    "sms_logs": {
+      "rows": 0,
+      "error": "relation \"public.sms_logs\" does not exist"
+    },
+    "audit_logs": {
+      "rows": 25,
+      "exists": true
+    },
+    "custom_services": {
+      "rows": 499,
+      "exists": true
+    },
+    "patient_refunds": {
+      "rows": 0,
+      "error": "relation \"public.patient_refunds\" does not exist"
+    }
+  }
+}

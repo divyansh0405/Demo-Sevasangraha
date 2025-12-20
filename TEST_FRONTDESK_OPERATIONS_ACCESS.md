@@ -8,12 +8,12 @@
 - Updated comments to reflect new access
 
 ### 2. User Credentials Required:
-**Email:** `frontdesk@valant.com`  
+**Email:** `frontdesk@indic.com`  
 **Password:** `Front@123`
 
 ### 3. Database Setup Required:
 Run the SQL script `UPDATE_FRONTDESK_USER.sql` to:
-- Update existing frontdesk user email to `frontdesk@valant.com`
+- Update existing frontdesk user email to `frontdesk@indic.com`
 - Set proper role metadata
 - Ensure user is active and has correct permissions
 
@@ -27,9 +27,9 @@ Run the SQL script `UPDATE_FRONTDESK_USER.sql` to:
 
 ### Step 2: Password Update
 1. Go to Supabase Dashboard > Authentication > Users
-2. Find user with email `frontdesk@valant.com`
+2. Find user with email `frontdesk@indic.com`
 3. If user doesn't exist, create new user:
-   - Email: `frontdesk@valant.com`
+   - Email: `frontdesk@indic.com`
    - Password: `Front@123`
    - Role metadata: `{"role": "frontdesk", "full_name": "Front Desk Staff"}`
 4. If user exists, update password to `Front@123`
@@ -37,7 +37,7 @@ Run the SQL script `UPDATE_FRONTDESK_USER.sql` to:
 ### Step 3: Login Test
 1. Start the application: `npm run dev`
 2. Login with:
-   - Email: `frontdesk@valant.com`
+   - Email: `frontdesk@indic.com`
    - Password: `Front@123`
 3. Verify you can see the "📊 Operations" tab in navigation
 4. Click on Operations tab to access OperationsLedger component
@@ -83,8 +83,8 @@ SELECT
     u.full_name
 FROM auth.users au
 LEFT JOIN public.users u ON au.id = u.id
-WHERE au.email = 'frontdesk@valant.com';
+WHERE au.email = 'frontdesk@indic.com';
 ```
 
 ## Final Result:
-The frontdesk user (`frontdesk@valant.com`) now has full access to the Operations section where they can view transaction history, generate receipts, and access the operations ledger.
+The frontdesk user (`frontdesk@indic.com`) now has full access to the Operations section where they can view transaction history, generate receipts, and access the operations ledger.

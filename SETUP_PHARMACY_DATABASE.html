@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pharmacy Database Setup</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            color: #0056B3;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .step {
+            background: #f8f9fa;
+            border-left: 4px solid #0056B3;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+
+        .step-number {
+            background: #0056B3;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .step-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .step-content {
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .code-box {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            overflow-x: auto;
+        }
+
+        .success {
+            background: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #28a745;
+            margin: 20px 0;
+        }
+
+        .warning {
+            background: #fff3cd;
+            border-color: #ffc107;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #ffc107;
+            margin: 20px 0;
+        }
+
+        .btn {
+            background: #0056B3;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            background: #004494;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,86,179,0.3);
+        }
+
+        a {
+            color: #0056B3;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .checklist {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .checklist li {
+            padding: 8px 0;
+            padding-left: 30px;
+            position: relative;
+        }
+
+        .checklist li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #28a745;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏥 Pharmacy Module Setup</h1>
+        <p class="subtitle">Follow these simple steps to set up your pharmacy database</p>
+
+        <div class="warning">
+            <strong>⚠️ Important:</strong> You need to run the database schema in Supabase before the pharmacy module will work!
+        </div>
+
+        <div class="step">
+            <div class="step-title">
+                <span class="step-number">1</span>
+                Open Supabase Dashboard
+            </div>
+            <div class="step-content">
+                <p>Go to your Supabase project dashboard:</p>
+                <div class="code-box">
+                    https://app.supabase.com/project/YOUR_PROJECT_ID
+                </div>
+                <p style="margin-top: 10px;">Then navigate to: <strong>SQL Editor</strong> (in the left sidebar)</p>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-title">
+                <span class="step-number">2</span>
+                Open the Schema File
+            </div>
+            <div class="step-content">
+                <p>In your project folder, find and open:</p>
+                <div class="code-box">
+                    hospital-crm-pro-new/PHARMACY_MODULE_SCHEMA.sql
+                </div>
+                <p style="margin-top: 10px;">Open it in any text editor (VS Code, Notepad++, etc.)</p>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-title">
+                <span class="step-number">3</span>
+                Copy & Paste the SQL
+            </div>
+            <div class="step-content">
+                <ol>
+                    <li>Select <strong>ALL</strong> content from the PHARMACY_MODULE_SCHEMA.sql file (Ctrl+A)</li>
+                    <li>Copy it (Ctrl+C)</li>
+                    <li>Go to Supabase SQL Editor</li>
+                    <li>Click "+ New Query"</li>
+                    <li>Paste the entire content (Ctrl+V)</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-title">
+                <span class="step-number">4</span>
+                Run the Schema
+            </div>
+            <div class="step-content">
+                <p>In Supabase SQL Editor:</p>
+                <ol>
+                    <li>Click the green <strong>"Run"</strong> button (or press Ctrl+Enter)</li>
+                    <li>Wait for 1-2 minutes for completion</li>
+                    <li>You should see "Success" message</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-title">
+                <span class="step-number">5</span>
+                Verify Setup
+            </div>
+            <div class="step-content">
+                <p>Run this query in Supabase to verify:</p>
+                <div class="code-box">
+SELECT table_name
+FROM information_schema.tables
+WHERE table_schema = 'public'
+AND table_name LIKE 'pharmacy_%';</div>
+                <p style="margin-top: 10px;">You should see 15+ pharmacy tables listed!</p>
+            </div>
+        </div>
+
+        <div class="success">
+            <strong>✅ Success! Now you can:</strong>
+            <ul class="checklist">
+                <li>View the pharmacy dashboard with metrics</li>
+                <li>Manage inventory with batch/lot tracking</li>
+                <li>Create bills for patients</li>
+                <li>See patient and medicine lists in billing</li>
+                <li>Track low stock and expiring items</li>
+            </ul>
+        </div>
+
+        <div class="warning">
+            <strong>💡 Quick Tip:</strong> Your pharmacy module automatically integrates with hospital-crm-pro-new!
+            <br><br>
+            • Patients from your CRM will appear in pharmacy billing<br>
+            • Medicines from your CRM are available in pharmacy<br>
+            • No manual sync required!
+        </div>
+
+        <div style="text-align: center; margin-top: 30px;">
+            <p style="color: #666; margin-bottom: 15px;">After running the schema, refresh your browser at:</p>
+            <div class="code-box" style="display: inline-block;">
+                http://localhost:3000
+            </div>
+            <br><br>
+            <p style="color: #999; font-size: 0.9em;">
+                Need help? Check <strong>PHARMACY_QUICK_START.md</strong> in your project folder
+            </p>
+        </div>
+    </div>
+</body>
+</html>

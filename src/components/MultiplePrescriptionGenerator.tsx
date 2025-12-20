@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import type { Patient, AssignedDoctor } from '../config/supabaseNew';
-import ValantPrescription from './ValantPrescription';
+import SevasangrahaPrescription from './SevasangrahaPrescription';
 import VHPrescription from './VHPrescription';
 
 interface MultiplePrescriptionGeneratorProps {
   patient: Patient;
-  prescriptionType: 'valant' | 'vh';
+  prescriptionType: 'sevasangraha' | 'vh';
   onClose: () => void;
 }
 
@@ -144,8 +144,8 @@ const MultiplePrescriptionGenerator: React.FC<MultiplePrescriptionGeneratorProps
 
         {/* Prescription Content */}
         <div className="flex-1 overflow-auto" style={{ maxHeight: 'calc(90vh - 200px)' }}>
-          {prescriptionType === 'valant' ? (
-            <ValantPrescription
+          {prescriptionType === 'sevasangraha' ? (
+            <SevasangrahaPrescription
               patient={modifiedPatient}
               onClose={() => {}}
             />

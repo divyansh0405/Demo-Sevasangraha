@@ -49,7 +49,7 @@ SELECT * FROM audit_logs LIMIT 1;
 ## How to Access
 
 ### For Admin Users
-1. Log in with admin credentials (admin@valant.com or meenal@valant.com)
+1. Log in with admin credentials (admin@indic.com or meenal@indic.com)
 2. Click on the **"🔍 Audit Log"** tab in the main navigation
 3. The audit log page will load with all recorded activities
 

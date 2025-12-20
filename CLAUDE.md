@@ -149,8 +149,8 @@ The Complete Patient Record system provides comprehensive medical record managem
 
 **Affected Components**:
 - `SimpleEnhancedPatientRecord.tsx` - Main record management interface
-- `ValantPrescription.tsx` - Valant prescription template integration
-- `VHPrescription.tsx` - VH prescription template integration  
-- `Valant2Prescription.tsx` - Valant2 prescription template integration
+- `SevasangrahaPrescription.tsx` - Sevasangraha prescription template integration
+- `VHPrescription.tsx` - VH prescription template integration
+- `Sevasangraha2Prescription.tsx` - Sevasangraha2 prescription template integration
 
 Remember: Always investigate which file contains the functionality you need to modify BEFORE making any changes!

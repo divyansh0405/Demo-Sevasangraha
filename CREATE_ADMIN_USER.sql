@@ -1,5 +1,5 @@
 -- Create Admin User with Full Access
--- Credentials: admin@valant.com / Admin@321
+-- Credentials: admin@indic.com / Admin@321
 
 -- STEP 1: Create auth user if doesn't exist (replace with actual signup via UI)
 -- This must be done through Supabase Auth UI or admin panel first!
@@ -13,7 +13,7 @@ SET
     'last_name', 'User'
   ),
   email_confirmed_at = COALESCE(email_confirmed_at, now())
-WHERE email = 'admin@valant.com';
+WHERE email = 'admin@indic.com';
 
 -- STEP 3: Create role enum if it doesn't exist
 DO $$ 
@@ -48,7 +48,7 @@ INSERT INTO users (
 ) 
 SELECT 
   id,
-  'admin@valant.com',
+  'admin@indic.com',
   'Admin',
   'User',
   'admin'::user_role,
@@ -56,7 +56,7 @@ SELECT
   now(),
   now()
 FROM auth.users 
-WHERE email = 'admin@valant.com'
+WHERE email = 'admin@indic.com'
 ON CONFLICT (id) 
 DO UPDATE SET
   role = 'admin'::user_role,
@@ -78,14 +78,14 @@ INSERT INTO users (
 ) 
 SELECT 
   gen_random_uuid(),
-  'admin@valant.com',
+  'admin@indic.com',
   'Admin',
   'User',
   'admin'::user_role,
   true,
   now(),
   now()
-WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'admin@valant.com')
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'admin@indic.com')
 ON CONFLICT (email)
 DO UPDATE SET
   role = 'admin'::user_role,
@@ -103,7 +103,7 @@ SELECT
   au.raw_user_meta_data->>'role' as metadata_role,
   au.raw_user_meta_data->>'first_name' as metadata_first_name
 FROM auth.users au
-WHERE au.email = 'admin@valant.com'
+WHERE au.email = 'admin@indic.com'
 
 UNION ALL
 
@@ -115,7 +115,7 @@ SELECT
   u.role::text,
   u.first_name
 FROM users u
-WHERE u.email = 'admin@valant.com';
+WHERE u.email = 'admin@indic.com';
 
 -- STEP 7: Final verification query
 SELECT 
@@ -138,4 +138,4 @@ SELECT
   au.raw_user_meta_data->>'role' as metadata_role
 FROM auth.users au
 FULL OUTER JOIN users u ON au.id = u.id OR au.email = u.email
-WHERE au.email = 'admin@valant.com' OR u.email = 'admin@valant.com';
+WHERE au.email = 'admin@indic.com' OR u.email = 'admin@indic.com';

@@ -29,7 +29,7 @@ export class EmailService {
   private static config: EmailConfig = {
     apiKey: import.meta.env.VITE_EMAIL_API_KEY || '',
     fromEmail: import.meta.env.VITE_EMAIL_FROM || 'onboarding@resend.dev',
-    fromName: import.meta.env.VITE_EMAIL_FROM_NAME || 'Valant Hospital',
+    fromName: import.meta.env.VITE_EMAIL_FROM_NAME || 'Sevasangraha',
     enabled: import.meta.env.VITE_EMAIL_ENABLED === 'true',
   };
 
@@ -141,7 +141,7 @@ export class EmailService {
       return { success: false, error: 'Email service not configured' };
     }
 
-    const subject = `Receipt #${receiptNumber} - Valant Hospital`;
+    const subject = `Receipt #${receiptNumber} - Sevasangraha`;
 
     const emailBody = `
       <!DOCTYPE html>
@@ -160,11 +160,11 @@ export class EmailService {
       <body>
         <div class="container">
           <div class="header">
-            <h1>Valant Hospital</h1>
+            <h1>Sevasangraha</h1>
           </div>
           <div class="content">
             <h2>Dear ${patientName},</h2>
-            <p>Thank you for choosing Valant Hospital. Please find your receipt attached below.</p>
+            <p>Thank you for choosing Sevasangraha. Please find your receipt attached below.</p>
 
             <div class="receipt-box">
               ${receiptHtml}
@@ -173,11 +173,11 @@ export class EmailService {
             <p>If you have any questions about this receipt, please contact us.</p>
 
             <p>Best regards,<br>
-            <strong>Valant Hospital Team</strong></p>
+            <strong>Sevasangraha Team</strong></p>
           </div>
           <div class="footer">
             <p>This is an automated email. Please do not reply to this message.</p>
-            <p>&copy; 2025 Valant Hospital. All rights reserved.</p>
+            <p>&copy; 2025 Sevasangraha. All rights reserved.</p>
           </div>
         </div>
       </body>
@@ -226,7 +226,7 @@ export class EmailService {
       return { success: false, error: 'Email service not configured' };
     }
 
-    const subject = `Prescription from Dr. ${doctorName} - Valant Hospital`;
+    const subject = `Prescription from Dr. ${doctorName} - Sevasangraha`;
 
     const emailBody = `
       <!DOCTYPE html>
@@ -245,7 +245,7 @@ export class EmailService {
       <body>
         <div class="container">
           <div class="header">
-            <h1>Valant Hospital</h1>
+            <h1>Sevasangraha</h1>
           </div>
           <div class="content">
             <h2>Dear ${patientName},</h2>
@@ -258,11 +258,11 @@ export class EmailService {
             <p><strong>Important:</strong> Please follow the prescribed medication and dosage as directed by your doctor.</p>
 
             <p>Best regards,<br>
-            <strong>Valant Hospital Team</strong></p>
+            <strong>Sevasangraha Team</strong></p>
           </div>
           <div class="footer">
             <p>This is an automated email. Please do not reply to this message.</p>
-            <p>&copy; 2025 Valant Hospital. All rights reserved.</p>
+            <p>&copy; 2025 Sevasangraha. All rights reserved.</p>
           </div>
         </div>
       </body>

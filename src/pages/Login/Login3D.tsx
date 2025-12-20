@@ -291,7 +291,7 @@ export const Login: React.FC = () => {
                       className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
                         errors.email ? 'border-red-300' : 'border-gray-300'
                       }`}
-                      placeholder="admin@valant.com"
+                      placeholder="admin@indic.com"
                       disabled={loading}
                     />
                     {errors.email && (

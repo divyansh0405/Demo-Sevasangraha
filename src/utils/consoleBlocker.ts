@@ -134,7 +134,7 @@ export const restoreConsole = () => {
 
 // Set console access based on admin status
 export const setConsoleAccess = (isAdmin: boolean, userEmail: string) => {
-  const hasAccess = isAdmin || userEmail === 'admin@valant.com' || userEmail === 'meenal@valant.com';
+  const hasAccess = isAdmin || userEmail === 'admin@indic.com' || userEmail === 'meenal@indic.com';
 
   if (hasAccess) {
     restoreConsole();

@@ -679,23 +679,23 @@ const IPDBillingModule: React.FC = () => {
                     },
                     body: JSON.stringify({
                       to: email,
-                      subject: 'IPD Bill #${bill.billId} - Valant Hospital',
+                      subject: 'IPD Bill #${bill.billId} - Sevasangraha Hospital',
                       html: \`
                         <!DOCTYPE html>
                         <html>
                         <head><meta charset="utf-8"></head>
                         <body style="font-family: Arial, sans-serif; padding: 20px;">
                           <h2>Dear ${bill.patientName},</h2>
-                          <p>Thank you for choosing Valant Hospital. Please find your IPD bill attached.</p>
+                          <p>Thank you for choosing Sevasangraha Hospital. Please find your IPD bill attached.</p>
                           <p><strong>Bill Number:</strong> ${bill.billId}</p>
                           <p><strong>Admission Date:</strong> ${new Date(bill.admissionDate).toLocaleDateString('en-IN')}</p>
                           <p><strong>Discharge Date:</strong> ${new Date(bill.dischargeDate).toLocaleDateString('en-IN')}</p>
-                          <p>Best regards,<br><strong>Valant Hospital Team</strong></p>
+                          <p>Best regards,<br><strong>Sevasangraha Hospital Team</strong></p>
                         </body>
                         </html>
                       \`,
                       from: 'onboarding@resend.dev',
-                      fromName: 'Valant Hospital',
+                      fromName: 'Sevasangraha Hospital',
                       attachments: [{
                         filename: 'IPD_Bill_${bill.billId}.pdf',
                         content: pdfBase64

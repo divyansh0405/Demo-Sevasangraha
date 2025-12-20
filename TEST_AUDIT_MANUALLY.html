@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audit Log Manual Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        button {
+            background: #0056B3;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #004494;
+        }
+        #output {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Audit Log Manual Test</h1>
+    <p>This page tests if audit logs can be created directly in your Supabase database.</p>
+
+    <button onclick="testConnection()">1. Test Supabase Connection</button>
+    <button onclick="testTableExists()">2. Check if audit_logs Table Exists</button>
+    <button onclick="testInsertAuditLog()">3. Test Insert Audit Log</button>
+    <button onclick="testQueryAuditLogs()">4. Query Audit Logs</button>
+    <button onclick="clearOutput()">Clear Output</button>
+
+    <div id="output"></div>
+
+    <script>
+        const supabaseUrl = 'https://oghqwddhojnryovmfvzc.supabase.co';
+        const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9naHF3ZGRob2pucnlvdm1mdnpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMxMTQ1NDEsImV4cCI6MjA2ODY5MDU0MX0.NVvYQFtqIg8OV-vvkAhCNFC_uMC1SBJDSKcLHRjf5w0';
+
+        const { createClient } = supabase;
+        const supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
+
+        function log(message, type = 'normal') {
+            const output = document.getElementById('output');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'success' ? 'success' : type === 'error' ? 'error' : '';
+            output.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+        }
+
+        function clearOutput() {
+            document.getElementById('output').innerHTML = '';
+        }
+
+        async function testConnection() {
+            log('Testing Supabase connection...');
+            try {
+                const { data, error } = await supabaseClient.from('users').select('count');
+                if (error) {
+                    log(`❌ Connection failed: ${error.message}`, 'error');
+                } else {
+                    log('✅ Supabase connection successful!', 'success');
+                }
+            } catch (err) {
+                log(`❌ Exception: ${err.message}`, 'error');
+            }
+        }
+
+        async function testTableExists() {
+            log('Checking if audit_logs table exists...');
+            try {
+                const { data, error } = await supabaseClient.from('audit_logs').select('count', { count: 'exact', head: true });
+                if (error) {
+                    log(`❌ Table check failed: ${error.message}`, 'error');
+                    log('💡 Hint: Run CREATE_AUDIT_LOGS_TABLE.sql in Supabase SQL Editor');
+                } else {
+                    log('✅ audit_logs table exists!', 'success');
+                    log(`   Found ${data} records`);
+                }
+            } catch (err) {
+                log(`❌ Exception: ${err.message}`, 'error');
+            }
+        }
+
+        async function testInsertAuditLog() {
+            log('Testing audit log insert...');
+            try {
+                const testData = {
+                    user_email: 'test@manual.com',
+                    user_role: 'test',
+                    action_type: 'UPDATE',
+                    table_name: 'patients',
+                    record_id: '00000000-0000-0000-0000-000000000000',
+                    section_name: 'Patient List',
+                    description: 'Manual test from HTML page',
+                    old_values: { name: 'Old Name', phone: '1234567890' },
+                    new_values: { name: 'New Name', phone: '9876543210' },
+                    field_changes: {
+                        name: { old: 'Old Name', new: 'New Name' },
+                        phone: { old: '1234567890', new: '9876543210' }
+                    }
+                };
+
+                log('Inserting test audit log with data:');
+                log(JSON.stringify(testData, null, 2));
+
+                const { data, error } = await supabaseClient
+                    .from('audit_logs')
+                    .insert(testData)
+                    .select();
+
+                if (error) {
+                    log(`❌ Insert failed: ${error.message}`, 'error');
+                    log(`   Error details: ${JSON.stringify(error, null, 2)}`);
+                } else {
+                    log('✅ Audit log inserted successfully!', 'success');
+                    log(`   Created audit log with ID: ${data[0].id}`);
+                    log(`   Full record: ${JSON.stringify(data[0], null, 2)}`);
+                }
+            } catch (err) {
+                log(`❌ Exception: ${err.message}`, 'error');
+            }
+        }
+
+        async function testQueryAuditLogs() {
+            log('Querying audit logs...');
+            try {
+                const { data, error, count } = await supabaseClient
+                    .from('audit_logs')
+                    .select('*', { count: 'exact' })
+                    .order('created_at', { ascending: false })
+                    .limit(10);
+
+                if (error) {
+                    log(`❌ Query failed: ${error.message}`, 'error');
+                } else {
+                    log(`✅ Query successful! Found ${count} total audit logs`, 'success');
+                    if (data && data.length > 0) {
+                        log(`\nRecent audit logs (${data.length} shown):`);
+                        data.forEach((log, i) => {
+                            this.log(`\n--- Audit Log ${i + 1} ---`);
+                            this.log(`ID: ${log.id}`);
+                            this.log(`User: ${log.user_email} (${log.user_role})`);
+                            this.log(`Action: ${log.action_type} on ${log.table_name}`);
+                            this.log(`Section: ${log.section_name}`);
+                            this.log(`Description: ${log.description}`);
+                            this.log(`Created: ${new Date(log.created_at).toLocaleString()}`);
+                            if (log.field_changes) {
+                                this.log(`Field Changes: ${JSON.stringify(log.field_changes, null, 2)}`);
+                            }
+                        });
+                    } else {
+                        log('⚠️ No audit logs found in database', 'error');
+                    }
+                }
+            } catch (err) {
+                log(`❌ Exception: ${err.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1037,7 +1037,7 @@ const EditPatientModal: React.FC<EditPatientModalProps> = ({
               </div>
 
               {/* Payment Section - Hidden for frontdesk users */}
-              {user?.email !== 'frontdesk@valant.com' && (
+              {user?.email !== 'frontdesk@indic.com' && (
                 <div style={{ backgroundColor: '#FFFFFF', borderRadius: '12px', padding: '24px', boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)' }}>
                   <div className="flex items-center gap-2 mb-6">
                     <CreditCard className="w-5 h-5" style={{ color: '#0056B3' }} />

@@ -85,7 +85,7 @@ export const setUserStatus = (isAdmin: boolean, userEmail: string) => {
 
   // Handle empty/null userEmail as non-admin
   const validEmail = userEmail || '';
-  currentUserIsAdmin = isAdmin && validEmail && (validEmail === 'admin@valant.com' || validEmail === 'meenal@valant.com');
+  currentUserIsAdmin = isAdmin && validEmail && (validEmail === 'admin@indic.com' || validEmail === 'meenal@indic.com');
 
   // Initialize console blocking if not done
   initializeConsoleBlocking();

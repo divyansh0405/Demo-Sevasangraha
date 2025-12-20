@@ -189,7 +189,7 @@ class AuthService {
     if (!user) return false;
 
     // Force admin access for specific users
-    if (user.email === 'admin@valant.com' || user.email === 'meenal@valant.com') {
+    if (user.email === 'admin@sevasangraha.com' || user.email === 'meenal@sevasangraha.com') {
       return true;
     }
 

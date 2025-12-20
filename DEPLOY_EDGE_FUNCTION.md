@@ -81,7 +81,7 @@ serve(async (req) => {
   }
 
   try {
-    const { to, subject, html, from = 'onboarding@resend.dev', fromName = 'Valant Hospital', attachments = [] } = await req.json()
+    const { to, subject, html, from = 'onboarding@resend.dev', fromName = 'Sevasangraha Hospital', attachments = [] } = await req.json()
 
     // Prepare email payload
     const emailPayload: any = {

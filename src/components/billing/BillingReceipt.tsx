@@ -65,10 +65,10 @@ const BillingReceipt: React.FC<BillingReceiptProps> = ({ bill, onClose }) => {
       name: '',
       address: '10, Madhav Vihar Shobhagpura, Udaipur (313001)',
       phone: '+91 9119118000',
-      email: 'valanthospital@gmail.com',
+      email: 'sevasangrahahospital@gmail.com',
       registration: '',
       gst: '',
-      website: 'www.valanthospital.com'
+      website: 'www.sevasangrahahospital.com'
     },
     
     patient: {

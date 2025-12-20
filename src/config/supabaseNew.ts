@@ -1,29 +1,21 @@
-import { createClient } from '@supabase/supabase-js';
+// ==============================================================================
+// DEPRECATED: This file is kept for backwards compatibility only
+// All database operations now use Azure PostgreSQL through backend API
+// Import from '../config/azure' instead
+// ==============================================================================
 
-// NEW SUPABASE PROJECT CONFIGURATION
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://oghqwddhojnryovmfvzc.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9naHF3ZGRob2pucnlvdm1mdnpjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMxMTQ1NDEsImV4cCI6MjA2ODY5MDU0MX0.NVvYQFtqIg8OV-vvkAhCNFC_uMC1SBJDSKcLHRjf5w0';
+import * as AzureConfig from './azure';
 
-// Validate configuration
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables');
-}
+// Re-export everything from azure config
+export * from './azure';
 
-// Create Supabase client with new configuration
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true,
-  },
-  realtime: {
-    params: {
-      eventsPerSecond: 10,
-    },
-  },
-});
+// Legacy supabase export - DO NOT USE
+export const supabase = null as any;
+export const HOSPITAL_ID = AzureConfig.HOSPITAL_ID;
 
-// COMPREHENSIVE DATABASE SCHEMA TYPES - MATCHING NEW ENHANCED SCHEMA
+console.warn('⚠️ supabaseNew.ts is deprecated. Import from "./azure" instead.');
+
+// Re-export all types for backwards compatibility
 
 export interface AssignedDoctor {
   name: string;
@@ -388,9 +380,6 @@ export interface PaginatedResponse<T> {
   total_pages: number;
 }
 
-// DEFAULT HOSPITAL ID (City General Hospital from your schema)
-export const HOSPITAL_ID = '550e8400-e29b-41d4-a716-446655440000';
-
 // APPOINTMENT CONSTANTS
 export const APPOINTMENT_TYPES = [
   { value: 'CONSULTATION', label: 'Consultation' },
@@ -408,5 +397,6 @@ export const APPOINTMENT_STATUS = [
   { value: 'NO_SHOW', label: 'No Show' }
 ];
 
-// EXPORT DEFAULT CLIENT
+// EXPORT DEFAULT CLIENT (deprecated)
+// DO NOT USE - All database operations should use backend API
 export default supabase;

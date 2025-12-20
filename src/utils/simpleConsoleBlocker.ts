@@ -27,7 +27,7 @@ let initialized = false;
 
 // Set admin access
 export const setAdminAccess = (isAdmin: boolean, userEmail: string) => {
-  const newAdminAccess = isAdmin || userEmail === 'admin@valant.com' || userEmail === 'meenal@valant.com';
+  const newAdminAccess = isAdmin || userEmail === 'admin@indic.com' || userEmail === 'meenal@indic.com';
 
   // If admin user detected, restore original console completely
   if (newAdminAccess && !adminAccess) {

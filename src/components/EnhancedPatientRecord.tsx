@@ -35,7 +35,7 @@ import type {
 } from '../utils/validation';
 
 // Import existing prescription component for integration
-import ValantPrescription from './ValantPrescription';
+import SevasangrahaPrescription from './SevasangrahaPrescription';
 
 interface EnhancedPatientRecordProps {
   patient: {
@@ -318,7 +318,7 @@ const EnhancedPatientRecord: React.FC<EnhancedPatientRecordProps> = ({
   if (showExistingPrescription || activeView === 'existing') {
     return (
       <ErrorBoundary>
-        <ValantPrescription patient={patient} onClose={onClose} />
+        <SevasangrahaPrescription patient={patient} onClose={onClose} />
       </ErrorBoundary>
     );
   }

@@ -87,7 +87,7 @@ const App: React.FC = () => {
     const handleKeyPress = (e: KeyboardEvent) => {
       if (e.ctrlKey && e.shiftKey && e.key === 'D') {
         // Only allow admin access to the debugger
-        if (user && (isAdmin() || user.email === 'admin@indic.com' || user.email === 'meenal@valant.com')) {
+        if (user && (isAdmin() || user.email === 'admin@indic.com' || user.email === 'meenal@indic.com')) {
           setShowDebugger(true);
         } else {
           toast.error('Access denied. Admin privileges required for debugger.');
@@ -369,7 +369,7 @@ const App: React.FC = () => {
 
       const backupData = {
         backup_info: {
-          hospital_name: 'VALANT HOSPITAL',
+          hospital_name: 'SEVASANGRAHA HOSPITAL',
           backup_date: new Date().toISOString(),
           backup_by: user?.email || 'Unknown',
           backup_version: '2.0',
@@ -438,7 +438,7 @@ const App: React.FC = () => {
       toast.dismiss(finalToast);
 
       const backupContent = JSON.stringify(backupData, null, 2);
-      const fileName = `valant-hospital-backup-${new Date().toISOString().split('T')[0]}.json`;
+      const fileName = `sevasangraha-hospital-backup-${new Date().toISOString().split('T')[0]}.json`;
 
       if (backupSettings.storageLocation === 'local') {
         // Local storage backup - download file
@@ -561,7 +561,7 @@ const App: React.FC = () => {
 
       const exportDataObject: any = {
         export_info: {
-          hospital_name: 'VALANT HOSPITAL',
+          hospital_name: 'SEVASANGRAHA HOSPITAL',
           exported_at: new Date().toISOString(),
           exported_by: user?.email || 'Unknown'
         }
@@ -629,11 +629,11 @@ const App: React.FC = () => {
 
       if (exportFormat === 'json') {
         fileContent = JSON.stringify(exportDataObject, null, 2);
-        fileName = `valant-hospital-data-${new Date().toISOString().split('T')[0]}.json`;
+        fileName = `sevasangraha-hospital-data-${new Date().toISOString().split('T')[0]}.json`;
         mimeType = 'application/json';
       } else {
         // CSV format with real data
-        let csvContent = 'VALANT HOSPITAL DATA EXPORT\n';
+        let csvContent = 'SEVASANGRAHA HOSPITAL DATA EXPORT\n';
         csvContent += `Exported on: ${new Date().toLocaleString()}\n\n`;
 
         if (exportData.patients && exportDataObject.patients?.data?.length > 0) {
@@ -688,7 +688,7 @@ const App: React.FC = () => {
         }
 
         fileContent = csvContent;
-        fileName = `valant-hospital-data-${new Date().toISOString().split('T')[0]}.csv`;
+        fileName = `sevasangraha-hospital-data-${new Date().toISOString().split('T')[0]}.csv`;
         mimeType = 'text/csv';
       }
 
@@ -953,12 +953,12 @@ const App: React.FC = () => {
               {/* Logo */}
               <img
                 src="/logo.png"
-                alt="VALANT HOSPITAL"
+                alt="SEVASANGRAHA HOSPITAL"
                 className="h-12 w-12 object-contain"
               />
               {/* Hospital Name */}
               <div>
-                <h1 className="text-xl font-bold text-blue-900">VALANT HOSPITAL</h1>
+                <h1 className="text-xl font-bold text-blue-900">SEVASANGRAHA HOSPITAL</h1>
                 <p className="text-xs text-gray-500">
                   Hospital Management System
                 </p>
