@@ -1605,15 +1605,28 @@ export class HospitalService {
       });
       return response.data;
     } catch (error: any) {
-      logger.error('Error adding to OPD queue:', error);
+      logger.error('🚨 addToOPDQueue error:', error);
       throw error;
     }
   }
 
-  static async updateQueueStatus(id: string, status: string): Promise<any> {
+  static async reorderOPDQueue(items: { id: string; order: number }[]): Promise<void> {
     try {
-      logger.log(`[OPD] Updating queue ${id} status to ${status}`);
-      const response = await axios.put(`${this.getBaseUrl()}/api/opd-queues/${id}/status`, { status }, {
+      logger.log('🔄 Reordering OPD queue:', items.length, 'items');
+      await axios.post(`${this.getBaseUrl()}/api/opd-queues/reorder`, { items }, {
+        headers: this.getHeaders()
+      });
+      logger.log('✅ Queue reordered successfully');
+    } catch (error: any) {
+      logger.error('🚨 reorderOPDQueue error:', error);
+      throw error;
+    }
+  }
+
+  static async updateOPDQueueStatus(queueId: string, status: string): Promise<any> {
+    try {
+      logger.log(`[OPD] Updating queue ${queueId} status to ${status}`);
+      const response = await axios.put(`${this.getBaseUrl()}/api/opd-queues/${queueId}/status`, { status }, {
         headers: this.getHeaders()
       });
       return response.data;

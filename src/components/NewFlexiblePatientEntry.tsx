@@ -65,18 +65,18 @@ const NewFlexiblePatientEntry: React.FC = () => {
     // Check if format is DD-MM-YYYY
     const regex = /^(\d{2})-(\d{2})-(\d{4})$/;
     if (!regex.test(dateString)) return false;
-    
+
     const [day, month, year] = dateString.split('-').map(Number);
-    
+
     // Check if date values are valid
     if (month < 1 || month > 12) return false;
     if (day < 1 || day > 31) return false;
     if (year < 1900 || year > new Date().getFullYear()) return false;
-    
+
     // Check days in month
     const daysInMonth = new Date(year, month, 0).getDate();
     if (day > daysInMonth) return false;
-    
+
     return true;
   };
 
@@ -159,11 +159,11 @@ const NewFlexiblePatientEntry: React.FC = () => {
   // Function to handle patient search and auto-fill
   const handlePatientNameChange = (name: string) => {
     setFormData({ ...formData, full_name: name });
-    
+
     if (name.length >= 1) { // Show results from first character
       const searchTerm = name.toLowerCase().trim();
       logger.log(`🔍 Searching for: "${searchTerm}" in ${existingPatients.length} patients`);
-      
+
       const filtered = existingPatients.filter(patient => {
         // Handle null/undefined values more robustly
         const firstName = (patient.first_name || '').toString().toLowerCase().trim();
@@ -171,7 +171,7 @@ const NewFlexiblePatientEntry: React.FC = () => {
         const fullName = `${firstName} ${lastName}`.trim();
         const patientId = (patient.patient_id || '').toString().toLowerCase().trim();
         const phone = (patient.phone || '').toString().trim();
-        
+
         // More comprehensive matching - including partial matches
         const matches = [
           firstName.includes(searchTerm),
@@ -187,39 +187,39 @@ const NewFlexiblePatientEntry: React.FC = () => {
           lastName.replace(/\s+/g, '').includes(searchTerm.replace(/\s+/g, '')),
           fullName.replace(/\s+/g, '').includes(searchTerm.replace(/\s+/g, ''))
         ];
-        
+
         return matches.some(match => match);
       });
-      
+
       // Sort filtered results by relevance (exact matches first, then starts with, then contains)
       filtered.sort((a, b) => {
         const aFullName = `${a.first_name || ''} ${a.last_name || ''}`.toLowerCase().trim();
         const bFullName = `${b.first_name || ''} ${b.last_name || ''}`.toLowerCase().trim();
-        
+
         const aFirstName = a.first_name?.toLowerCase() || '';
         const bFirstName = b.first_name?.toLowerCase() || '';
-        
+
         // Exact matches first
         if (aFullName === searchTerm && bFullName !== searchTerm) return -1;
         if (bFullName === searchTerm && aFullName !== searchTerm) return 1;
-        
+
         // Starts with first name
         if (aFirstName.startsWith(searchTerm) && !bFirstName.startsWith(searchTerm)) return -1;
         if (bFirstName.startsWith(searchTerm) && !aFirstName.startsWith(searchTerm)) return 1;
-        
+
         // Starts with full name
         if (aFullName.startsWith(searchTerm) && !bFullName.startsWith(searchTerm)) return -1;
         if (bFullName.startsWith(searchTerm) && !aFullName.startsWith(searchTerm)) return 1;
-        
+
         // Alphabetical order for the rest
         return aFullName.localeCompare(bFullName);
       });
-      
+
       logger.log(`🎯 Found ${filtered.length} patients matching "${searchTerm}"`);
       if (filtered.length > 0) {
         logger.log(`📋 First few results:`, filtered.slice(0, 3).map(p => `${p.first_name} ${p.last_name} (${p.patient_id})`));
       }
-      
+
       setFilteredPatients(filtered);
       setShowPatientDropdown(filtered.length > 0);
     } else {
@@ -231,11 +231,11 @@ const NewFlexiblePatientEntry: React.FC = () => {
   // Function to auto-fill patient details
   const selectExistingPatient = (patient: any) => {
     logger.log('🔍 selectExistingPatient called with:', patient);
-    
+
     setSelectedExistingPatient(patient);
     setIsNewVisit(true);
     setShowPatientDropdown(false);
-    
+
     // Auto-fill all patient details
     const newFormData = {
       ...formData,
@@ -259,10 +259,10 @@ const NewFlexiblePatientEntry: React.FC = () => {
       // Keep current date of entry as the new visit date
       date_of_entry: new Date()
     };
-    
+
     logger.log('📝 Setting new form data:', newFormData);
     setFormData(newFormData);
-    
+
     toast.success(`Auto-filled details for ${patient.first_name} ${patient.last_name} - This will be counted as a new visit`);
   };
 
@@ -272,7 +272,7 @@ const NewFlexiblePatientEntry: React.FC = () => {
     setIsNewVisit(false);
     setShowPatientDropdown(false);
     setFilteredPatients([]);
-    
+
     setFormData({
       ...formData,
       prefix: 'Mr',
@@ -293,7 +293,7 @@ const NewFlexiblePatientEntry: React.FC = () => {
       has_reference: 'NO',
       reference_details: ''
     });
-    
+
     toast.success('Cleared form for new patient entry');
   };
 
@@ -301,7 +301,7 @@ const NewFlexiblePatientEntry: React.FC = () => {
   const loadExistingPatients = async (forceRefresh = false) => {
     try {
       const now = Date.now();
-      
+
       // Only load if we haven't loaded in the last 30 seconds, or if forced refresh
       if (!forceRefresh && existingPatients.length > 0 && (now - patientsLastLoaded) < 30000) {
         logger.log('🔄 Using cached patient data (loaded', Math.round((now - patientsLastLoaded) / 1000), 'seconds ago)');
@@ -314,14 +314,14 @@ const NewFlexiblePatientEntry: React.FC = () => {
       const patients = await HospitalService.getPatients(50000, true, true); // limit=50000, skipOrthoFilter=TRUE, includeInactive=true
       logger.log('✅ Loaded patients for search:', patients?.length || 0);
       logger.log('🏥 First few patient hospital_ids:', patients?.slice(0, 5).map(p => `${p.first_name} ${p.last_name} - Hospital ID: ${p.hospital_id} - Active: ${p.is_active}`));
-      
+
       // Log first few patients to verify they're newest
       if (patients && patients.length > 0) {
-        logger.log('📅 Latest patients:', patients.slice(0, 3).map(p => 
+        logger.log('📅 Latest patients:', patients.slice(0, 3).map(p =>
           `${p.first_name} ${p.last_name} (Created: ${p.created_at || 'Unknown'})`
         ));
       }
-      
+
       setExistingPatients(patients || []);
       setPatientsLastLoaded(now);
     } catch (error) {
@@ -334,7 +334,7 @@ const NewFlexiblePatientEntry: React.FC = () => {
   // Load existing patients on mount and set up periodic refresh
   useEffect(() => {
     loadExistingPatients();
-    
+
     // Refresh patient list every 2 minutes to catch new patients
     const refreshInterval = setInterval(() => {
       loadExistingPatients(true);
@@ -354,7 +354,7 @@ const NewFlexiblePatientEntry: React.FC = () => {
         const fullName = `${firstName} ${lastName}`.trim();
         const patientId = (patient.patient_id || '').toString().toLowerCase().trim();
         const phone = (patient.phone || '').toString().trim();
-        
+
         // More comprehensive matching
         const matches = [
           firstName.includes(searchTerm),
@@ -367,32 +367,32 @@ const NewFlexiblePatientEntry: React.FC = () => {
           lastName.replace(/\s+/g, '').includes(searchTerm.replace(/\s+/g, '')),
           fullName.replace(/\s+/g, '').includes(searchTerm.replace(/\s+/g, ''))
         ];
-        
+
         return matches.some(match => match);
       });
-      
+
       // Sort by relevance - exact matches first, then starts with, then contains
       filtered.sort((a, b) => {
         const aFirstName = a.first_name?.toLowerCase() || '';
         const bFirstName = b.first_name?.toLowerCase() || '';
         const aFullName = `${aFirstName} ${a.last_name?.toLowerCase() || ''}`.trim();
         const bFullName = `${bFirstName} ${b.last_name?.toLowerCase() || ''}`.trim();
-        
+
         // Exact matches first
         if (aFullName === searchTerm && bFullName !== searchTerm) return -1;
         if (bFullName === searchTerm && aFullName !== searchTerm) return 1;
-        
+
         // First name starts with search term
         if (aFirstName.startsWith(searchTerm) && !bFirstName.startsWith(searchTerm)) return -1;
         if (bFirstName.startsWith(searchTerm) && !aFirstName.startsWith(searchTerm)) return 1;
-        
+
         // Full name starts with search term
         if (aFullName.startsWith(searchTerm) && !bFullName.startsWith(searchTerm)) return -1;
         if (bFullName.startsWith(searchTerm) && !aFullName.startsWith(searchTerm)) return 1;
-        
+
         return aFullName.localeCompare(bFullName);
       });
-      
+
       setFilteredPatients(filtered);
     } else {
       // Show all patients if search is empty (but limit to first 50 for performance)
@@ -403,7 +403,7 @@ const NewFlexiblePatientEntry: React.FC = () => {
   // Filter doctors when department changes
   useEffect(() => {
     if (formData.selected_department) {
-      const filtered = DOCTORS_DATA.filter(doc => 
+      const filtered = DOCTORS_DATA.filter(doc =>
         doc.department === formData.selected_department
       );
       setFilteredDoctors(filtered);
@@ -415,7 +415,7 @@ const NewFlexiblePatientEntry: React.FC = () => {
   // Filter temp doctors for multiple selection
   useEffect(() => {
     if (tempDepartment) {
-      const filtered = DOCTORS_DATA.filter(doc => 
+      const filtered = DOCTORS_DATA.filter(doc =>
         doc.department === tempDepartment
       );
       setFilteredDoctors(filtered);
@@ -450,23 +450,23 @@ const NewFlexiblePatientEntry: React.FC = () => {
       }
 
       logger.log('💾 Preparing patient data for submission...');
-      
+
       let newPatient: any;
-      
+
       // Check if this is a new visit for an existing patient
       if (isNewVisit && selectedExistingPatient) {
         logger.log('🔄 Processing new visit for existing patient:', selectedExistingPatient.patient_id);
-        
+
         // Update existing patient's date_of_entry and doctor information to new visit date
         const updateData: any = {
           date_of_entry: `${formData.date_of_entry.getFullYear()}-${String(formData.date_of_entry.getMonth() + 1).padStart(2, '0')}-${String(formData.date_of_entry.getDate()).padStart(2, '0')}` // Format as YYYY-MM-DD in local timezone
         };
-        
+
         // Update doctor information if provided
         if (formData.consultation_mode === 'single') {
           const finalDoctorName = formData.selected_doctor === 'CUSTOM' ? formData.custom_doctor_name : formData.selected_doctor;
           const finalDepartmentName = formData.selected_department === 'CUSTOM' ? formData.custom_department_name : formData.selected_department;
-          
+
           if (finalDoctorName) {
             updateData.assigned_doctor = finalDoctorName;
           }
@@ -474,7 +474,7 @@ const NewFlexiblePatientEntry: React.FC = () => {
             updateData.assigned_department = finalDepartmentName;
           }
         }
-        
+
         try {
           const updatedPatient = await HospitalService.updatePatient(selectedExistingPatient.id, updateData);
           if (updatedPatient) {
@@ -495,60 +495,60 @@ const NewFlexiblePatientEntry: React.FC = () => {
       } else {
         // Create new patient
         logger.log('👤 Creating new patient...');
-        
+
         // Prepare patient data - properly mapped to database schema
         const patientData: CreatePatientData = {
-        // Required fields
-        prefix: formData.prefix as 'Mr' | 'Mrs' | 'Ms' | 'Dr' | 'Prof',
-        first_name: formData.first_name || formData.full_name.split(' ')[0],
-        last_name: formData.last_name || formData.full_name.split(' ').slice(1).join(' ') || '',
-        gender: formData.gender as 'MALE' | 'FEMALE' | 'OTHER',
-        hospital_id: '550e8400-e29b-41d4-a716-446655440000', // Default hospital ID
-        
-        // Optional personal information
-        phone: formData.phone || '',
-        email: formData.email || undefined,
-        address: formData.address || '',
-        date_of_birth: formData.date_of_birth || undefined,
-        age: formData.age || undefined,
-        
-        // Emergency contact (using patient info as fallback since UI removed these fields)
-        emergency_contact_name: formData.first_name + ' ' + formData.last_name,
-        emergency_contact_phone: formData.phone || '',
-        
-        // Medical information
-        blood_group: formData.blood_group || undefined,
-        medical_history: formData.medical_history || undefined,
-        allergies: formData.allergies || undefined,
-        current_medications: formData.current_medications || undefined,
-        
-        // Reference information
-        has_reference: formData.has_reference === 'YES',
-        reference_details: formData.has_reference === 'YES' ? formData.reference_details || undefined : undefined,
-        
-        // Patient tag
-        patient_tag: formData.patient_tag || undefined,
-        
-        // Notes - only include reference details
-        notes: formData.has_reference === 'YES' && formData.reference_details ? `REF: ${formData.reference_details}` : undefined,
-        
-        // Date tracking - use local date to avoid timezone issues
-        date_of_entry: formData.date_of_entry ? 
-          `${formData.date_of_entry.getFullYear()}-${String(formData.date_of_entry.getMonth() + 1).padStart(2, '0')}-${String(formData.date_of_entry.getDate()).padStart(2, '0')}` : 
-          `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`,
-        
-        // Doctor assignment for backward compatibility
-        assigned_doctor: formData.consultation_mode === 'single' ? 
-          (formData.selected_doctor === 'CUSTOM' ? 
-            (formData.custom_doctor_name || undefined) : 
-            (formData.selected_doctor || undefined)) : undefined,
-        assigned_department: formData.consultation_mode === 'single' ? 
-          (formData.selected_department === 'CUSTOM' ? 
-            (formData.custom_department_name || undefined) : 
-            (formData.selected_department || undefined)) : undefined,
-      };
+          // Required fields
+          prefix: formData.prefix as 'Mr' | 'Mrs' | 'Ms' | 'Dr' | 'Prof',
+          first_name: formData.first_name || formData.full_name.split(' ')[0],
+          last_name: formData.last_name || formData.full_name.split(' ').slice(1).join(' ') || '',
+          gender: formData.gender as 'MALE' | 'FEMALE' | 'OTHER',
+          hospital_id: '550e8400-e29b-41d4-a716-446655440000', // Default hospital ID
 
-      // Note: Patient will be hidden from patient list automatically if they have an appointment
+          // Optional personal information
+          phone: formData.phone || '',
+          email: formData.email || undefined,
+          address: formData.address || '',
+          date_of_birth: formData.date_of_birth || undefined,
+          age: formData.age || undefined,
+
+          // Emergency contact (using patient info as fallback since UI removed these fields)
+          emergency_contact_name: formData.first_name + ' ' + formData.last_name,
+          emergency_contact_phone: formData.phone || '',
+
+          // Medical information
+          blood_group: formData.blood_group || undefined,
+          medical_history: formData.medical_history || undefined,
+          allergies: formData.allergies || undefined,
+          current_medications: formData.current_medications || undefined,
+
+          // Reference information
+          has_reference: formData.has_reference === 'YES',
+          reference_details: formData.has_reference === 'YES' ? formData.reference_details || undefined : undefined,
+
+          // Patient tag
+          patient_tag: formData.patient_tag || undefined,
+
+          // Notes - only include reference details
+          notes: formData.has_reference === 'YES' && formData.reference_details ? `REF: ${formData.reference_details}` : undefined,
+
+          // Date tracking - use local date to avoid timezone issues
+          date_of_entry: formData.date_of_entry ?
+            `${formData.date_of_entry.getFullYear()}-${String(formData.date_of_entry.getMonth() + 1).padStart(2, '0')}-${String(formData.date_of_entry.getDate()).padStart(2, '0')}` :
+            `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`,
+
+          // Doctor assignment for backward compatibility
+          assigned_doctor: formData.consultation_mode === 'single' ?
+            (formData.selected_doctor === 'CUSTOM' ?
+              (formData.custom_doctor_name || undefined) :
+              (formData.selected_doctor || undefined)) : undefined,
+          assigned_department: formData.consultation_mode === 'single' ?
+            (formData.selected_department === 'CUSTOM' ?
+              (formData.custom_department_name || undefined) :
+              (formData.selected_department || undefined)) : undefined,
+        };
+
+        // Note: Patient will be hidden from patient list automatically if they have an appointment
 
         logger.log('📤 Creating patient with data:', patientData);
         logger.log('👨‍⚕️ Doctor info being saved:', {
@@ -564,12 +564,12 @@ const NewFlexiblePatientEntry: React.FC = () => {
 
       // Handle doctors assignment based on consultation mode
       let assignedDoctorsData: AssignedDoctor[] = [];
-      
+
       if (formData.consultation_mode === 'single') {
         // Single doctor mode (backward compatibility)
         const finalDoctorName = formData.selected_doctor === 'CUSTOM' ? formData.custom_doctor_name : formData.selected_doctor;
         const finalDepartmentName = formData.selected_department === 'CUSTOM' ? formData.custom_department_name : formData.selected_department;
-        
+
         if (finalDoctorName && finalDepartmentName) {
           assignedDoctorsData.push({
             doctor_name: finalDoctorName,
@@ -598,7 +598,7 @@ const NewFlexiblePatientEntry: React.FC = () => {
             discountAmount = formData.discount_value;
           }
           const finalAmount = originalAmount - discountAmount;
-          
+
           // Build description with discount info if applicable
           let description = `Consultation with ${doctor.doctor_name} - ${doctor.department}`;
 
@@ -613,7 +613,7 @@ const NewFlexiblePatientEntry: React.FC = () => {
               description += ` | Reason: ${formData.discount_reason}`;
             }
           }
-          
+
           const transactionData: CreateTransactionData = {
             patient_id: newPatient.id,  // Use UUID id, not patient_id string
             amount: finalAmount, // Use discounted amount
@@ -643,25 +643,58 @@ const NewFlexiblePatientEntry: React.FC = () => {
       //   await HospitalService.assignDoctorsToPatient(newPatient.id, assignedDoctorsData);  // Use UUID id here too
       // }
 
+      // AUTO-ADD TO OPD QUEUE
+      if (!saveAsDraft && assignedDoctorsData.length > 0) {
+        try {
+          // Get the primary doctor for the queue
+          const primaryDoctorInfo = assignedDoctorsData[0];
+
+          // Try to find the doctor's UUID from the fetched doctors list
+          // We need to fetch this list first or do it here
+          const doctorsList = await HospitalService.getDoctors();
+          const matchedDoctor = doctorsList.find(d =>
+            d.name.toLowerCase() === primaryDoctorInfo.doctor_name.toLowerCase() ||
+            `${d.first_name || ''} ${d.last_name || ''}`.trim().toLowerCase() === primaryDoctorInfo.doctor_name.toLowerCase()
+          );
+
+          if (matchedDoctor) {
+            logger.log('🏥 Auto-adding patient to OPD Queue for doctor:', matchedDoctor.name);
+            await HospitalService.addToOPDQueue({
+              patient_id: newPatient.id, // UUID
+              doctor_id: matchedDoctor.id, // UUID
+              priority: false,
+              notes: 'Auto-added from registration'
+            });
+            logger.log('✅ Successfully added to OPD Queue');
+          } else {
+            logger.warn('⚠️ Could not find matching doctor UUID for queue addition:', primaryDoctorInfo.doctor_name);
+            // Optional: Try to add with a default doctor or warn
+          }
+        } catch (queueError) {
+          logger.error('❌ Failed to auto-add to OPD Queue:', queueError);
+          // Don't block the registration flow for this
+        }
+      }
+
       // Handle appointment scheduling if enabled
-      if (formData.schedule_appointment && formData.appointment_mode === 'new_patient' && 
-          formData.appointment_date && formData.appointment_time) {
-        
+      if (formData.schedule_appointment && formData.appointment_mode === 'new_patient' &&
+        formData.appointment_date && formData.appointment_time) {
+
         // Get doctor name and department from consultation settings
-        const appointmentDoctorName = formData.consultation_mode === 'single' 
+        const appointmentDoctorName = formData.consultation_mode === 'single'
           ? (formData.selected_doctor === 'CUSTOM' ? formData.custom_doctor_name : formData.selected_doctor)
           : (selectedDoctors.length > 0 ? selectedDoctors[0].doctorName : '');
-        
+
         const appointmentDepartment = formData.consultation_mode === 'single'
           ? (formData.selected_department === 'CUSTOM' ? formData.custom_department_name : formData.selected_department)
           : (selectedDoctors.length > 0 ? selectedDoctors[0].department : 'General');
-        
+
         if (!appointmentDoctorName) {
           toast.error('Please select a doctor above to schedule appointment');
           setLoading(false);
           return;
         }
-        
+
         const appointmentData = {
           id: Date.now().toString(),
           patient_id: newPatient.patient_id,
@@ -672,7 +705,7 @@ const NewFlexiblePatientEntry: React.FC = () => {
           appointment_date: formData.appointment_date ? formData.appointment_date.toISOString().split('T')[0] : '',
           appointment_time: formData.appointment_time,
           // Add scheduled_at field that dashboard expects
-          scheduled_at: formData.appointment_date && formData.appointment_time 
+          scheduled_at: formData.appointment_date && formData.appointment_time
             ? `${formData.appointment_date.toISOString().split('T')[0]}T${formData.appointment_time}:00`
             : new Date().toISOString(),
           appointment_type: formData.appointment_type as 'consultation' | 'follow-up' | 'procedure' | 'emergency',
@@ -689,13 +722,13 @@ const NewFlexiblePatientEntry: React.FC = () => {
           const appointments = existingAppointments ? JSON.parse(existingAppointments) : [];
           appointments.push(appointmentData);
           localStorage.setItem('hospital_appointments', JSON.stringify(appointments));
-          
+
           logger.log('📅 New appointment created:', appointmentData);
           logger.log('📅 Total appointments in localStorage:', appointments.length);
-          
+
           // Dispatch event to notify Dashboard of the new appointment
           window.dispatchEvent(new Event('appointmentUpdated'));
-          
+
           toast.success(`Appointment scheduled for ${formData.appointment_date ? formData.appointment_date.toLocaleDateString('en-IN') : 'selected date'} at ${formData.appointment_time}`);
         } catch (error) {
           logger.error('Error scheduling appointment:', error);
@@ -710,8 +743,8 @@ const NewFlexiblePatientEntry: React.FC = () => {
 
         const discount = formData.discount_value > 0
           ? (formData.discount_type === 'PERCENTAGE'
-              ? total * (formData.discount_value / 100)
-              : formData.discount_value)
+            ? total * (formData.discount_value / 100)
+            : formData.discount_value)
           : 0;
 
         return Math.max(0, total - discount);
@@ -763,16 +796,16 @@ const NewFlexiblePatientEntry: React.FC = () => {
           }
         }
       }
-      
+
       // Refresh patient list to include the new patient in search results
       loadExistingPatients(true);
-      
+
       // Reset form and states
       setSelectedExistingPatient(null);
       setIsNewVisit(false);
       setShowPatientDropdown(false);
       setFilteredPatients([]);
-      
+
       setFormData({
         prefix: 'Mr',
         full_name: '',
@@ -841,7 +874,7 @@ const NewFlexiblePatientEntry: React.FC = () => {
     }
 
     const consultationFee = parseInt(prompt('Enter consultation fee for this doctor:') || '500');
-    
+
     const newDoctor = {
       id: Date.now().toString(),
       department: tempDepartment,
@@ -1113,15 +1146,15 @@ const NewFlexiblePatientEntry: React.FC = () => {
                         onChange={(e) => {
                           const fullName = e.target.value;
                           handlePatientNameChange(fullName);
-                          
+
                           // Update first_name and last_name for new patients
                           if (!selectedExistingPatient) {
                             const nameParts = fullName.trim().split(' ');
                             const firstName = nameParts[0] || '';
                             const lastName = nameParts.slice(1).join(' ') || '';
-                            
-                            setFormData({ 
-                              ...formData, 
+
+                            setFormData({
+                              ...formData,
                               full_name: fullName,
                               first_name: firstName,
                               last_name: lastName
@@ -1150,10 +1183,10 @@ const NewFlexiblePatientEntry: React.FC = () => {
                         }}
                         required
                       />
-                      
+
                       {/* Patient Search Dropdown */}
                       {showPatientDropdown && filteredPatients.length > 0 && (
-                        <div 
+                        <div
                           style={{
                             position: 'absolute',
                             top: '100%',
@@ -1198,7 +1231,7 @@ const NewFlexiblePatientEntry: React.FC = () => {
                               </div>
                             </div>
                           ))}
-                          
+
                           {/* Show more results indicator */}
                           {filteredPatients.length > 15 && (
                             <div
@@ -1216,7 +1249,7 @@ const NewFlexiblePatientEntry: React.FC = () => {
                           )}
                         </div>
                       )}
-                      
+
                       {/* New Visit Indicator */}
                       {isNewVisit && selectedExistingPatient && (
                         <div style={{
@@ -1234,7 +1267,7 @@ const NewFlexiblePatientEntry: React.FC = () => {
                         </div>
                       )}
                     </div>
-                    
+
                     {/* Clear/New Patient Button */}
                     {isNewVisit && selectedExistingPatient && (
                       <div style={{ marginTop: '8px' }}>
@@ -1711,7 +1744,7 @@ const NewFlexiblePatientEntry: React.FC = () => {
                         ))}
                         <option value="CUSTOM">Custom Department</option>
                       </select>
-                      
+
                       {/* Custom Department Input */}
                       {formData.selected_department === 'CUSTOM' && (
                         <div style={{ marginTop: '8px' }}>
@@ -1763,7 +1796,7 @@ const NewFlexiblePatientEntry: React.FC = () => {
                         ))}
                         <option value="CUSTOM">Custom Doctor</option>
                       </select>
-                      
+
                       {/* Custom Doctor Input */}
                       {formData.selected_doctor === 'CUSTOM' && (
                         <div style={{ marginTop: '8px' }}>
@@ -2149,8 +2182,8 @@ const NewFlexiblePatientEntry: React.FC = () => {
                               <div
                                 key={patient.patient_id}
                                 onClick={() => {
-                                  setFormData({ 
-                                    ...formData, 
+                                  setFormData({
+                                    ...formData,
                                     selected_existing_patient: patient,
                                     existing_patient_search: `${patient.first_name} ${patient.last_name} (${patient.patient_id})`
                                   });
@@ -2220,7 +2253,7 @@ const NewFlexiblePatientEntry: React.FC = () => {
                                 const today = new Date();
                                 const isToday = date.toDateString() === today.toDateString();
                                 const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-                                
+
                                 if (isToday) return 'react-datepicker__day--today-custom';
                                 if (isWeekend) return 'react-datepicker__day--weekend';
                                 return 'react-datepicker__day--normal';
@@ -2275,8 +2308,8 @@ const NewFlexiblePatientEntry: React.FC = () => {
                                   backgroundColor: formData.consultation_mode === 'single' && formData.selected_doctor ? '#F5F7FA' : '#FFFFFF',
                                   outline: 'none'
                                 }}
-                                placeholder={formData.consultation_mode === 'single' 
-                                  ? (formData.selected_doctor || "Select doctor above first") 
+                                placeholder={formData.consultation_mode === 'single'
+                                  ? (formData.selected_doctor || "Select doctor above first")
                                   : "Multiple doctors selected above"}
                                 readOnly={formData.consultation_mode === 'single' && formData.selected_doctor}
                                 onFocus={(e) => e.currentTarget.style.borderColor = '#0056B3'}
@@ -2305,8 +2338,8 @@ const NewFlexiblePatientEntry: React.FC = () => {
                                   backgroundColor: '#F5F7FA',
                                   outline: 'none'
                                 }}
-                                placeholder={formData.consultation_mode === 'single' 
-                                  ? (formData.selected_department || "Select department above first") 
+                                placeholder={formData.consultation_mode === 'single'
+                                  ? (formData.selected_department || "Select department above first")
                                   : "Multiple departments"}
                                 readOnly
                               />
@@ -2429,7 +2462,7 @@ const NewFlexiblePatientEntry: React.FC = () => {
                   Registration Summary
                 </h3>
                 <p style={{ fontSize: '14px', color: '#999999' }}>
-                  {formData.consultation_mode === 'single' 
+                  {formData.consultation_mode === 'single'
                     ? `Consultation Fee: ₹${formData.consultation_fee || 0}`
                     : `Multiple Doctors: ${selectedDoctors.length} selected`
                   }
@@ -2441,19 +2474,19 @@ const NewFlexiblePatientEntry: React.FC = () => {
               </div>
               <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#0056B3' }}>
                 ₹{(() => {
-                    const total = formData.consultation_mode === 'single'
-                      ? formData.consultation_fee
-                      : selectedDoctors.reduce((total, doc) => total + (doc.consultationFee || 0), 0);
+                  const total = formData.consultation_mode === 'single'
+                    ? formData.consultation_fee
+                    : selectedDoctors.reduce((total, doc) => total + (doc.consultationFee || 0), 0);
 
-                    // compute discount based on type
-                    const discount = formData.discount_value > 0
-                      ? (formData.discount_type === 'PERCENTAGE'
-                          ? (total * (formData.discount_value / 100))
-                          : formData.discount_value)
-                      : 0;
+                  // compute discount based on type
+                  const discount = formData.discount_value > 0
+                    ? (formData.discount_type === 'PERCENTAGE'
+                      ? (total * (formData.discount_value / 100))
+                      : formData.discount_value)
+                    : 0;
 
-                    return (total - discount).toFixed(2);
-                  })()}
+                  return (total - discount).toFixed(2);
+                })()}
               </div>
             </div>
 

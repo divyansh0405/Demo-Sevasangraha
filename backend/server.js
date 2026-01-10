@@ -1048,7 +1048,8 @@ app.get('/api/opd-queues', async (req, res) => {
       query += ` AND DATE(q.created_at) = CURRENT_DATE`;
     }
 
-    query += ` ORDER BY q.priority DESC, q.token_number ASC`;
+    // Updated ordering: Priority > Queue Order > Token Number
+    query += ` ORDER BY q.queue_order ASC, q.priority DESC, q.created_at ASC`;
 
     const result = await pool.query(query, params);
     res.json(result.rows);
@@ -1063,25 +1064,60 @@ app.post('/api/opd-queues', async (req, res) => {
     const { patient_id, doctor_id, appointment_id, priority, notes } = req.body;
     console.log(`[OPD] Creating queue entry for patient ${patient_id}`);
 
-    // Get next token number for today
+    // Get next token number AND queue order for today
     const tokenResult = await pool.query(`
-      SELECT COALESCE(MAX(token_number), 0) + 1 as next_token 
+      SELECT 
+        COALESCE(MAX(token_number), 0) + 1 as next_token,
+        COALESCE(MAX(queue_order), 0) + 1 as next_order
       FROM opd_queues 
       WHERE DATE(created_at) = CURRENT_DATE
     `);
     const nextToken = tokenResult.rows[0].next_token;
+    const nextOrder = tokenResult.rows[0].next_order;
 
     const result = await pool.query(
-      `INSERT INTO opd_queues (patient_id, doctor_id, appointment_id, token_number, priority, status)
-       VALUES ($1, $2, $3, $4, $5, 'WAITING')
+      `INSERT INTO opd_queues (patient_id, doctor_id, appointment_id, token_number, queue_order, priority, status)
+       VALUES ($1, $2, $3, $4, $5, $6, 'WAITING')
        RETURNING *`,
-      [patient_id, doctor_id, appointment_id, nextToken, priority || false]
+      [patient_id, doctor_id, appointment_id, nextToken, nextOrder, priority || false]
     );
 
     res.status(201).json(result.rows[0]);
   } catch (error) {
     console.error('Error creating OPD queue:', error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+// NEW: Batch reorder endpoint
+app.post('/api/opd-queues/reorder', async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { items } = req.body; // Array of { id, order }
+
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: 'Invalid items array' });
+    }
+
+    await client.query('BEGIN');
+
+    // Use a single query with CASE for better performance if items < 1000
+    // For simplicity and safety with prepared statements, we'll loop in a transaction
+    for (const item of items) {
+      await client.query(
+        'UPDATE opd_queues SET queue_order = $1, updated_at = NOW() WHERE id = $2',
+        [item.order, item.id]
+      );
+    }
+
+    await client.query('COMMIT');
+    res.json({ message: 'Queue reordered successfully' });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error reordering queue:', error);
+    res.status(500).json({ error: error.message });
+  } sealed finally {
+    client.release();
   }
 });
 
